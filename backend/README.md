@@ -1,65 +1,65 @@
-# Backend Setup
+# Huong Dan Chay Backend
 
-Backend uses Spring Boot microservices with Eureka, API Gateway, MySQL, and RabbitMQ.
+Backend duoc tach theo mo hinh microservice, gom Eureka Server, API Gateway, MySQL va RabbitMQ.
 
-## Requirements
+## Yeu cau
 
 - Java 21
-- Maven or project Maven wrapper
+- Maven hoac Maven wrapper cua tung service
 - Docker Desktop
 
-## Run Docker SQL and RabbitMQ
+## Chay Docker SQL va RabbitMQ
 
-From the project root:
+Mo terminal tai thu muc goc project:
 
 ```powershell
 cd E:\cinema-management-system
 docker compose up -d mysql rabbitmq
 ```
 
-MySQL connection:
+Thong tin ket noi MySQL:
 
 - Host: `localhost`
 - Port: `3307`
-- Username: `root`
+- User: `root`
 - Password: `123456`
 - Container: `cinema-mysql`
 
 RabbitMQ dashboard:
 
 - URL: `http://localhost:15672`
-- Username: `admin`
+- User: `admin`
 - Password: `123456`
 
-## SQL Init Files
+## File SQL khoi tao du lieu
 
-Docker loads SQL files from:
+Docker se tu dong chay cac file SQL trong thu muc:
 
 ```text
 docker/mysql/init/
 ```
 
-Current files:
+Cac file hien co:
 
-- `01-create-databases.sql`: creates service databases.
-- `02-create-tables.sql`: creates movie/user tables and sample data.
+- `01-create-databases.sql`: tao database cho cac service.
+- `02-create-tables.sql`: tao bang movies/users va them du lieu mau.
 
-Important: MySQL only runs files in `/docker-entrypoint-initdb.d` when the database volume is created for the first time.
+Luu y: MySQL chi tu dong chay cac file SQL trong `/docker-entrypoint-initdb.d` o lan tao volume dau tien. Neu volume da ton tai, sua file SQL se khong tu dong chay lai.
 
-## Reset MySQL and Run SQL Init Again
+## Reset MySQL de chay lai SQL tu dau
 
-Use this when you want Docker to recreate the database and re-run all SQL init files:
+Dung cach nay khi muon xoa database cu va de Docker chay lai toan bo file SQL init:
 
 ```powershell
 docker compose down -v
 docker compose up -d mysql rabbitmq
 ```
 
-This deletes the Docker volume `mysql_data`, so local database data will be removed.
+Lenh `docker compose down -v` se xoa volume `mysql_data`, nen du lieu local trong MySQL se mat.
 
-## Import SQL Manually
+## Import SQL thu cong
 
-If MySQL is already running and you only want to import/update SQL without deleting the volume:
+Dung cach nay khi MySQL dang chay va ban chi muon nap lai file SQL ma khong xoa volume.
 
 PowerShell:
 
@@ -73,70 +73,89 @@ CMD:
 docker exec -i cinema-mysql mysql -uroot -p123456 < docker\mysql\init\02-create-tables.sql
 ```
 
-Check data:
+Kiem tra du lieu sau khi import:
 
 ```powershell
 docker exec -it cinema-mysql mysql -uroot -p123456
 ```
 
-Inside MySQL:
+Trong MySQL:
 
 ```sql
 USE movie_db;
 SELECT * FROM movies;
 ```
 
-## Run Backend Services With Docker Compose
+## Chay toan bo backend bang Docker Compose
 
-Run all backend infrastructure and services:
+Tai thu muc goc project:
 
 ```powershell
 docker compose up -d
 ```
 
-Useful URLs:
+Cac URL quan trong:
 
 - Eureka: `http://localhost:8761`
 - API Gateway: `http://localhost:8080`
 - Movie API: `http://localhost:8080/api/movies`
 - User API: `http://localhost:8080/api/users`
 
-## Run Backend Services Manually
+## Chay backend thu cong
 
-Start Docker SQL/RabbitMQ first:
+Chay MySQL va RabbitMQ truoc:
 
 ```powershell
 docker compose up -d mysql rabbitmq
 ```
 
-Then run services in this order:
+Sau do chay cac service theo thu tu sau.
+
+Eureka Server:
 
 ```powershell
 cd backend\eureka-server
 mvn spring-boot:run
 ```
 
+API Gateway:
+
 ```powershell
 cd backend\api-gateway
 mvn spring-boot:run
 ```
+
+Movie Service:
 
 ```powershell
 cd backend\movie-service
 mvn spring-boot:run
 ```
 
+User Service:
+
 ```powershell
 cd backend\user-service
 mvn spring-boot:run
 ```
+
+Showtime Service:
 
 ```powershell
 cd backend\showtime-service
 mvn spring-boot:run
 ```
 
+Booking Service:
+
 ```powershell
 cd backend\booking-service
 mvn spring-boot:run
 ```
+
+## Tai khoan demo
+
+Neu da import `02-create-tables.sql`, co the dang nhap frontend bang:
+
+- Email: `admin@gmail.com`
+- Password: `123456`
