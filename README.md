@@ -1,80 +1,161 @@
-# Cinema Management System
+# Huong Dan Chay Backend
 
-## Requirements
+Backend duoc tach theo mo hinh microservice, gom Eureka Server, API Gateway, MySQL va RabbitMQ.
+
+## Yeu cau
 
 - Java 21
+- Maven hoac Maven wrapper cua tung service
 - Docker Desktop
-- Git
 
-## Start Docker
+## Chay Docker SQL va RabbitMQ
+
+Mo terminal tai thu muc goc project:
+
+```powershell
+cd E:\cinema-management-system
+docker compose up -d mysql rabbitmq
+```
+
+Thong tin ket noi MySQL:
+
+- Host: `localhost`
+- Port: `3307`
+- User: `root`
+- Password: `123456`
+- Container: `cinema-mysql`
+
+RabbitMQ dashboard:
+
+- URL: `http://localhost:15672`
+- User: `admin`
+- Password: `123456`
+
+## File SQL khoi tao du lieu
+
+Docker se tu dong chay cac file SQL trong thu muc:
+
+```text
+docker/mysql/init/
+```
+
+Cac file hien co:
+
+- `01-create-databases.sql`: tao database cho cac service.
+- `02-create-tables.sql`: tao bang movies/users va them du lieu mau.
+
+Luu y: MySQL chi tu dong chay cac file SQL trong `/docker-entrypoint-initdb.d` o lan tao volume dau tien. Neu volume da ton tai, sua file SQL se khong tu dong chay lai.
+
+## Reset MySQL de chay lai SQL tu dau
+
+Dung cach nay khi muon xoa database cu va de Docker chay lai toan bo file SQL init:
+
+```powershell
+docker compose down -v
+docker compose up -d mysql rabbitmq
+```
+
+Lenh `docker compose down -v` se xoa volume `mysql_data`, nen du lieu local trong MySQL se mat.
+
+## Import SQL thu cong
+
+Dung cach nay khi MySQL dang chay va ban chi muon nap lai file SQL ma khong xoa volume.
+
+PowerShell:
+
+```powershell
+Get-Content .\docker\mysql\init\02-create-tables.sql | docker exec -i cinema-mysql mysql -uroot -p123456
+```
+
+CMD:
+
+```bat
+docker exec -i cinema-mysql mysql -uroot -p123456 < docker\mysql\init\02-create-tables.sql
+```
+
+Kiem tra du lieu sau khi import:
+
+```powershell
+docker exec -it cinema-mysql mysql -uroot -p123456
+```
+
+Trong MySQL:
+
+```sql
+USE movie_db;
+SELECT * FROM movies;
+```
+
+## Chay toan bo backend bang Docker Compose
+
+Tai thu muc goc project:
 
 ```powershell
 docker compose up -d
 ```
 
-## Docker Services
+Cac URL quan trong:
 
-MySQL:
+- Eureka: `http://localhost:8761`
+- API Gateway: `http://localhost:8080`
+- Movie API: `http://localhost:8080/api/movies`
+- User API: `http://localhost:8080/api/users`
 
-- Host: localhost
-- Port: 3307
-- Username: root
-- Password: 123456
+## Chay backend thu cong
 
-Databases:
+Chay MySQL va RabbitMQ truoc:
 
-- movie_db
-- showtime_db
-- booking_db
+```powershell
+docker compose up -d mysql rabbitmq
+```
 
-RabbitMQ:
+Sau do chay cac service theo thu tu sau.
 
-- App port: 5672
-- Dashboard: http://localhost:15672
-- Username: admin
-- Password: 123456
-
-## Run Backend Services
-
-Run Eureka first:
+Eureka Server:
 
 ```powershell
 cd backend\eureka-server
-.\mvnw.cmd spring-boot:run
+mvn spring-boot:run
 ```
 
-Run Movie Service:
-
-```powershell
-cd backend\movie-service
-.\mvnw.cmd spring-boot:run
-```
-
-Run Showtime Service:
-
-```powershell
-cd backend\showtime-service
-.\mvnw.cmd spring-boot:run
-```
-
-Run Booking Service:
-
-```powershell
-cd backend\booking-service
-.\mvnw.cmd spring-boot:run
-```
-
-Run API Gateway:
+API Gateway:
 
 ```powershell
 cd backend\api-gateway
-.\mvnw.cmd spring-boot:run
+mvn spring-boot:run
 ```
 
-## URLs
+Movie Service:
 
-- Eureka: http://localhost:8761
-- API Gateway: http://localhost:8080
-- Movie API: http://localhost:8080/api/movies
-- Showtime API: http://localhost:8080/api/showtimes
-- Booking API: http://localhost:8080/api/bookings
+```powershell
+cd backend\movie-service
+mvn spring-boot:run
+```
+
+User Service:
+
+```powershell
+cd backend\user-service
+mvn spring-boot:run
+```
+
+Showtime Service:
+
+```powershell
+cd backend\showtime-service
+mvn spring-boot:run
+```
+
+Booking Service:
+
+```powershell
+cd backend\booking-service
+mvn spring-boot:run
+```
+
+## Tai khoan demo
+
+Neu da import `02-create-tables.sql`, co the dang nhap frontend bang:
+
+- Email: `admin@gmail.com`
+- Password: `123456`
