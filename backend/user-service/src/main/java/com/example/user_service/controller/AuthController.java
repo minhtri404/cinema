@@ -5,7 +5,6 @@ import com.example.user_service.dto.LoginResponse;
 import com.example.user_service.entity.User;
 import com.example.user_service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +15,6 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin("*")
 public class AuthController {
 
     private final UserRepository userRepository;

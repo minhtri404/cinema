@@ -12,6 +12,11 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       default:
         aliases:
@@ -29,5 +34,122 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: 123456
 
+  eureka-server:
+    image: maven:3.9.9-eclipse-temurin-21
+    container_name: cinema-eureka-server
+    working_dir: /app
+    volumes:
+      - ./backend/eureka-server:/app
+      - maven_eureka:/root/.m2
+    command: mvn spring-boot:run
+    ports:
+      - "8761:8761"
+
+  api-gateway:
+    image: maven:3.9.9-eclipse-temurin-21
+    container_name: cinema-api-gateway
+    working_dir: /app
+    volumes:
+      - ./backend/api-gateway:/app
+      - maven_gateway:/root/.m2
+    command: mvn spring-boot:run
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+
+  movie-service:
+    image: maven:3.9.9-eclipse-temurin-21
+    container_name: cinema-movie-service
+    working_dir: /app
+    volumes:
+      - ./backend/movie-service:/app
+      - maven_movie:/root/.m2
+    command: mvn spring-boot:run
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql
+      MYSQL_URL: jdbc:mysql://mysql:3306/movie_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+
+  showtime-service:
+    image: maven:3.9.9-eclipse-temurin-21
+    container_name: cinema-showtime-service
+    working_dir: /app
+    volumes:
+      - ./backend/showtime-service:/app
+      - maven_showtime:/root/.m2
+    command: mvn spring-boot:run
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/showtime_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+
+  booking-service:
+    image: maven:3.9.9-eclipse-temurin-21
+    container_name: cinema-booking-service
+    working_dir: /app
+    volumes:
+      - ./backend/booking-service:/app
+      - maven_booking:/root/.m2
+    command: mvn spring-boot:run
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/booking_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8083:8083"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+
+  user-service:
+    image: maven:3.9.9-eclipse-temurin-21
+    container_name: cinema-user-service
+    working_dir: /app
+    volumes:
+      - ./backend/user-service:/app
+      - maven_user:/root/.m2
+    command: mvn spring-boot:run
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/user_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    ports:
+      - "8084:8084"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+
 volumes:
   mysql_data:
+  maven_eureka:
+  maven_gateway:
+  maven_movie:
+  maven_showtime:
+  maven_booking:
+  maven_user:
