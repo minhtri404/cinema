@@ -1,4 +1,4 @@
-# Cinema Management System
+# Huong Dan Chay Backend
 
 He thong quan ly rap phim gom frontend React va backend Spring Boot microservices. Du an dang chay theo mo hinh Eureka Server, API Gateway, MySQL, RabbitMQ va cac service rieng cho phim, lich chieu, dat ve, nguoi dung.
 
@@ -20,7 +20,6 @@ He thong quan ly rap phim gom frontend React va backend Spring Boot microservice
 - Java 21
 - Node.js va npm
 - Docker Desktop
-- Git
 
 ## Chay bang Docker
 
@@ -105,6 +104,27 @@ docker compose up -d
 ```
 
 Lenh tren se xoa database local trong Docker volume.
+
+Neu khong muon xoa volume, co the import lai SQL thu cong khi MySQL dang chay:
+
+```powershell
+Get-Content .\docker\mysql\init\02-create-tables.sql | docker exec -i cinema-mysql mysql -uroot -p123456
+```
+
+Kiem tra nhanh du lieu:
+
+```powershell
+docker exec -it cinema-mysql mysql -uroot -p123456
+```
+
+```sql
+USE movie_db;
+SELECT * FROM movies;
+SELECT * FROM genres;
+
+USE showtime_db;
+SELECT * FROM theaters;
+```
 
 ## Anh poster
 
