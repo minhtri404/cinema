@@ -4,10 +4,12 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { deleteMovie, getMovies } from "../../../api/movieApi";
 import "../../../styles/movie.css";
 
 function MovieListPage() {
+  const navigate = useNavigate();
   const [movies, setMovies] = useState([]);
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
@@ -58,28 +60,7 @@ function MovieListPage() {
   }, [keyword, movies]);
 
   useEffect(() => {
-    let ignore = false;
-
-    getMovies()
-      .then((response) => {
-        if (!ignore) {
-          setMovies(normalizeMovies(response.data));
-        }
-      })
-      .catch((err) => {
-        if (!ignore) {
-          setError(getLoadErrorMessage(err));
-        }
-      })
-      .finally(() => {
-        if (!ignore) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      ignore = true;
-    };
+    loadMovies();
   }, []);
 
   return (
@@ -91,7 +72,11 @@ function MovieListPage() {
           <p>Quan ly danh sach phim dang co trong he thong.</p>
         </div>
 
-        <button className="movie-add-btn" type="button">
+        <button
+          className="movie-add-btn"
+          onClick={() => navigate("/admin/movies/create")}
+          type="button"
+        >
           <AddRoundedIcon />
           <span>Them phim</span>
         </button>
@@ -149,6 +134,10 @@ function MovieListPage() {
                             className="movie-poster"
                             src={movie.posterUrl}
                             alt={movie.title || "Poster phim"}
+                            onError={(event) => {
+                              event.currentTarget.src =
+                                "https://placehold.co/120x160?text=No+Image";
+                            }}
                           />
                         ) : (
                           <div className="movie-no-image">No image</div>
@@ -172,7 +161,12 @@ function MovieListPage() {
                     </td>
                     <td>
                       <div className="movie-actions">
-                        <button className="icon-btn" type="button" aria-label="Sua phim">
+                        <button
+                          className="icon-btn"
+                          onClick={() => navigate(`/admin/movies/edit/${movie.id}`)}
+                          type="button"
+                          aria-label="Sua phim"
+                        >
                           <EditOutlinedIcon />
                         </button>
                         <button

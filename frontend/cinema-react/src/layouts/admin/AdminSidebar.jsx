@@ -4,6 +4,8 @@ import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import GroupRoundedIcon from "@mui/icons-material/GroupRounded";
 import MovieRoundedIcon from "@mui/icons-material/MovieRounded";
 import TheatersRoundedIcon from "@mui/icons-material/TheatersRounded";
+import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import { NavLink } from "react-router-dom";
 
 const menuItems = [
@@ -12,6 +14,8 @@ const menuItems = [
   { label: "Lich chieu", path: "/admin/showtimes", Icon: CalendarMonthRoundedIcon },
   { label: "Ve", path: "/admin/bookings", Icon: ConfirmationNumberRoundedIcon },
   { label: "Nguoi dung", path: "/admin/users", Icon: GroupRoundedIcon },
+  { label: "The loai", path: "/admin/genres", Icon: CategoryOutlinedIcon },
+  { label: "Rap", path: "/admin/theaters", Icon: StorefrontOutlinedIcon },
 ];
 
 function Sidebar() {

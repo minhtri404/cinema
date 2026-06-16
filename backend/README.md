@@ -42,7 +42,15 @@ docker/mysql/init/
 Cac file hien co:
 
 - `01-create-databases.sql`: tao database cho cac service.
-- `02-create-tables.sql`: tao bang movies/users va them du lieu mau.
+- `02-create-tables.sql`: tao bang movies, genres, theaters, users va them du lieu mau.
+
+Anh poster mau duoc luu trong:
+
+```text
+backend/movie-service/uploads/movies/
+```
+
+Khi clone repo va chay Docker, movie-service mount thu muc `backend/movie-service` vao container nen cac anh nay co san trong container.
 
 Luu y: MySQL chi tu dong chay cac file SQL trong `/docker-entrypoint-initdb.d` o lan tao volume dau tien. Neu volume da ton tai, sua file SQL se khong tu dong chay lai.
 
@@ -99,7 +107,18 @@ Cac URL quan trong:
 - Eureka: `http://localhost:8761`
 - API Gateway: `http://localhost:8080`
 - Movie API: `http://localhost:8080/api/movies`
+- Genre API: `http://localhost:8080/api/genres`
+- Theater API: `http://localhost:8080/api/theaters`
+- Showtime API: `http://localhost:8080/api/showtimes`
+- Booking API: `http://localhost:8080/api/bookings`
 - User API: `http://localhost:8080/api/users`
+
+## Du lieu mau da co
+
+- 3 phim mau, co poster va trailer YouTube.
+- 10 the loai phim trong bang `movie_db.genres`.
+- 7 rap mau trong bang `showtime_db.theaters`.
+- 1 tai khoan admin trong bang `user_db.users`.
 
 ## Chay backend thu cong
 

@@ -1,6 +1,6 @@
-import Sidebar from "./Sidebar";
-import Header from "./Header";
-import "../../styles/layout.css";
+import Sidebar from "./AdminSidebar";
+import Header from "./AdminHeader";
+import "./adminLayout.css";
 
 function AdminLayout({ children }) {
   return (

@@ -1,7 +1,7 @@
 import TheatersRoundedIcon from "@mui/icons-material/TheatersRounded";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginAdmin } from "../services/authService";
+import { loginAdmin } from "../../api/authApi";
 
 function LoginPage() {
   const navigate = useNavigate();

@@ -34,6 +34,8 @@ public class Movie {
 
     private String posterUrl;
 
+    private String trailerUrl;
+
     private String status;
 
     private LocalDateTime createdAt;

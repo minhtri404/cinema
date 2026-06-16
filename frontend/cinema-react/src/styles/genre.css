@@ -1,0 +1,148 @@
+.genre-page {
+  padding: 24px;
+}
+
+.genre-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.genre-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.genre-header h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.genre-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.genre-add-btn {
+  background: #5a73e8;
+  color: white;
+  padding: 11px 18px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.genre-add-btn:hover {
+  color: white;
+  background: #435bd4;
+}
+
+.genre-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.genre-search {
+  width: 360px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  padding: 12px 14px;
+  outline: none;
+}
+
+.genre-search:focus {
+  border-color: #5a73e8;
+  box-shadow: 0 0 0 3px rgba(90, 115, 232, 0.12);
+}
+
+.genre-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.genre-table th {
+  background: #f8fafc;
+  color: #475569;
+  text-align: left;
+  font-size: 14px;
+  padding: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.genre-table td {
+  padding: 15px 14px;
+  border-bottom: 1px solid #edf2f7;
+  color: #334155;
+}
+
+.genre-name {
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.genre-desc {
+  color: #64748b;
+}
+
+.genre-status {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.genre-status.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.genre-status.inactive {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.genre-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.genre-icon-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 9px;
+  background: #eef2ff;
+  color: #435bd4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.genre-icon-btn:hover {
+  background: #dfe6ff;
+  color: #263dbf;
+}
+
+.genre-icon-btn.danger {
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.genre-icon-btn.danger:hover {
+  background: #ffe4e6;
+}
+
+.genre-empty {
+  text-align: center;
+  color: #64748b;
+  padding: 30px;
+}

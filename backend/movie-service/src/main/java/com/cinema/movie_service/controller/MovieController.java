@@ -51,6 +51,7 @@ public class MovieController {
         movie.setDirector(request.getDirector());
         movie.setReleaseDate(request.getReleaseDate());
         movie.setPosterUrl(request.getPosterUrl());
+        movie.setTrailerUrl(request.getTrailerUrl());
         movie.setStatus(request.getStatus());
 
         return movieRepository.save(movie);

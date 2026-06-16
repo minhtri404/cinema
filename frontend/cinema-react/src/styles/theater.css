@@ -1,0 +1,252 @@
+.theater-page {
+  padding: 24px;
+}
+
+.theater-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.theater-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.theater-header h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.theater-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.theater-add-btn {
+  border: none;
+  background: #5a73e8;
+  color: #ffffff;
+  padding: 11px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.theater-add-btn:hover {
+  background: #435bd4;
+}
+
+.theater-toolbar {
+  margin-bottom: 20px;
+}
+
+.theater-search {
+  width: 360px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  padding: 12px 14px;
+  outline: none;
+}
+
+.theater-search:focus {
+  border-color: #5a73e8;
+  box-shadow: 0 0 0 3px rgba(90, 115, 232, 0.12);
+}
+
+.theater-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.theater-table th {
+  background: #f8fafc;
+  color: #475569;
+  text-align: left;
+  font-size: 14px;
+  padding: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.theater-table td {
+  padding: 15px 14px;
+  border-bottom: 1px solid #edf2f7;
+  color: #334155;
+}
+
+.theater-name {
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.theater-muted {
+  color: #64748b;
+}
+
+.theater-status {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.theater-status.online {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.theater-status.offline {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.theater-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.theater-icon-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 9px;
+  background: #eef2ff;
+  color: #435bd4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.theater-icon-btn:hover {
+  background: #dfe6ff;
+}
+
+.theater-icon-btn.danger {
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.theater-icon-btn.danger:hover {
+  background: #ffe4e6;
+}
+
+.theater-empty {
+  text-align: center;
+  color: #64748b;
+  padding: 30px;
+}
+
+.theater-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 70px;
+  z-index: 999;
+}
+
+.theater-modal {
+  width: 720px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+}
+
+.theater-modal-header {
+  padding: 22px 26px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.theater-modal-header h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.theater-form {
+  padding: 24px 26px;
+}
+
+.theater-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px 22px;
+}
+
+.theater-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.theater-form-group.full {
+  grid-column: span 2;
+}
+
+.theater-form-group label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.theater-form-group input,
+.theater-form-group select {
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  padding: 12px 14px;
+  outline: none;
+  color: #1f2937;
+}
+
+.theater-form-group input:focus,
+.theater-form-group select:focus {
+  border-color: #5a73e8;
+  box-shadow: 0 0 0 3px rgba(90, 115, 232, 0.12);
+}
+
+.theater-modal-actions {
+  padding: 20px 26px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.theater-cancel-btn {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  padding: 11px 24px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.theater-save-btn {
+  border: none;
+  background: #5a73e8;
+  color: white;
+  padding: 11px 28px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.theater-save-btn:hover {
+  background: #435bd4;
+}
+
+.theater-save-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
