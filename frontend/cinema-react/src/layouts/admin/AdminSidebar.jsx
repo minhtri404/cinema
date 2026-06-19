@@ -6,16 +6,21 @@ import MovieRoundedIcon from "@mui/icons-material/MovieRounded";
 import TheatersRoundedIcon from "@mui/icons-material/TheatersRounded";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+import MeetingRoomOutlinedIcon from "@mui/icons-material/MeetingRoomOutlined";
+import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
 import { NavLink } from "react-router-dom";
 
 const menuItems = [
   { label: "Dashboard", path: "/admin", Icon: DashboardRoundedIcon },
   { label: "Phim", path: "/admin/movies", Icon: MovieRoundedIcon },
-  { label: "Lich chieu", path: "/admin/showtimes", Icon: CalendarMonthRoundedIcon },
-  { label: "Ve", path: "/admin/bookings", Icon: ConfirmationNumberRoundedIcon },
-  { label: "Nguoi dung", path: "/admin/users", Icon: GroupRoundedIcon },
-  { label: "The loai", path: "/admin/genres", Icon: CategoryOutlinedIcon },
-  { label: "Rap", path: "/admin/theaters", Icon: StorefrontOutlinedIcon },
+  { label: "Thể loại", path: "/admin/genres", Icon: CategoryOutlinedIcon },
+  { label: "Rạp", path: "/admin/theaters", Icon: StorefrontOutlinedIcon },
+  { label: "Phòng chiếu", path: "/admin/rooms", Icon: MeetingRoomOutlinedIcon },
+  { label: "Lịch chiếu", path: "/admin/showtimes", Icon: CalendarMonthRoundedIcon },
+  { label: "Vé", path: "/admin/bookings", Icon: ConfirmationNumberRoundedIcon },
+  { label: "Giá vé", path: "/admin/ticket-pricing", Icon: PaidOutlinedIcon },
+  { label: "Người dùng", path: "/admin/users", Icon: GroupRoundedIcon },
+
 ];
 
 function Sidebar() {
@@ -25,6 +30,7 @@ function Sidebar() {
         <div className="brand-icon">
           <TheatersRoundedIcon />
         </div>
+
         <div>
           <span>Admin Cinema</span>
           <p>Management</p>
@@ -37,9 +43,9 @@ function Sidebar() {
         {menuItems.map(({ label, path, Icon }) => (
           <NavLink
             key={path}
-            className={({ isActive }) => (isActive ? "active" : undefined)}
-            end={path === "/admin"}
             to={path}
+            end={path === "/admin"}
+            className={({ isActive }) => (isActive ? "active" : undefined)}
           >
             <Icon className="menu-icon" />
             <span>{label}</span>

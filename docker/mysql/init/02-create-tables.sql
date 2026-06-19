@@ -134,3 +134,39 @@ ON DUPLICATE KEY UPDATE
     location = VALUES(location),
     room_count = VALUES(room_count),
     status = VALUES(status);
+
+CREATE TABLE IF NOT EXISTS rooms (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    theater_id BIGINT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    seat_count INT,
+    type VARCHAR(30),
+    status VARCHAR(30),
+    UNIQUE KEY uk_rooms_theater_name (theater_id, name)
+);
+
+INSERT INTO rooms (theater_id, name, seat_count, type, status)
+VALUES
+(1, 'Phong 1', 80, '2D', 'ACTIVE'),
+(1, 'Phong 2', 100, '3D', 'ACTIVE'),
+(1, 'Phong VIP', 50, 'IMAX', 'ACTIVE'),
+(2, 'Phong 1', 90, '2D', 'ACTIVE'),
+(2, 'Phong 2', 120, '3D', 'ACTIVE'),
+(3, 'Phong 1', 70, '2D', 'ACTIVE'),
+(4, 'Phong 1', 100, '2D', 'ACTIVE')
+ON DUPLICATE KEY UPDATE
+    seat_count = VALUES(seat_count),
+    type = VALUES(type),
+    status = VALUES(status);
+
+CREATE TABLE IF NOT EXISTS seats (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    room_id BIGINT NOT NULL,
+    seat_code VARCHAR(20) NOT NULL,
+    seat_row VARCHAR(10),
+    seat_number INT,
+    seat_type VARCHAR(30),
+    extra_price DOUBLE,
+    status VARCHAR(30),
+    UNIQUE KEY uk_seats_room_code (room_id, seat_code)
+);

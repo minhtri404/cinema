@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { Link } from "react-router-dom";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import AdminLayout from "../../../layouts/admin/AdminLayout";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import EventSeatOutlinedIcon from "@mui/icons-material/EventSeatOutlined";
+import { getRooms } from "../../../api/roomApi";
 import {
   createTheater,
   deleteTheater,
@@ -21,9 +23,9 @@ const emptyForm = {
 
 function TheaterListPage() {
   const [theaters, setTheaters] = useState([]);
+  const [rooms, setRooms] = useState([]);
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
-
   const [showModal, setShowModal] = useState(false);
   const [editingTheater, setEditingTheater] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -32,11 +34,16 @@ function TheaterListPage() {
   const loadTheaters = async () => {
     try {
       setLoading(true);
-      const res = await getTheaters();
-      setTheaters(res.data || []);
+      const [theaterRes, roomRes] = await Promise.all([
+        getTheaters(),
+        getRooms(),
+      ]);
+
+      setTheaters(theaterRes.data || []);
+      setRooms(roomRes.data || []);
     } catch (error) {
-      console.error("Lỗi tải danh sách rạp:", error);
-      alert("Không tải được danh sách rạp.");
+      console.error("Loi tai danh sach rap:", error);
+      alert("Khong tai duoc danh sach rap.");
     } finally {
       setLoading(false);
     }
@@ -59,6 +66,16 @@ function TheaterListPage() {
       );
     });
   }, [theaters, keyword]);
+
+  const roomsByTheaterId = useMemo(() => {
+    return rooms.reduce((groups, room) => {
+      const theaterId = String(room.theaterId);
+      return {
+        ...groups,
+        [theaterId]: [...(groups[theaterId] || []), room],
+      };
+    }, {});
+  }, [rooms]);
 
   const openCreateModal = () => {
     setEditingTheater(null);
@@ -98,12 +115,12 @@ function TheaterListPage() {
     e.preventDefault();
 
     if (!form.name.trim()) {
-      alert("Tên rạp không được để trống.");
+      alert("Ten rap khong duoc de trong.");
       return;
     }
 
     if (!form.address.trim()) {
-      alert("Địa chỉ rạp không được để trống.");
+      alert("Dia chi rap khong duoc de trong.");
       return;
     }
 
@@ -121,93 +138,115 @@ function TheaterListPage() {
 
       if (editingTheater) {
         await updateTheater(editingTheater.id, payload);
-        alert("Cập nhật rạp thành công!");
+        alert("Cap nhat rap thanh cong!");
       } else {
         await createTheater(payload);
-        alert("Thêm rạp thành công!");
+        alert("Them rap thanh cong!");
       }
 
       closeModal();
       loadTheaters();
     } catch (error) {
-      console.error("Lỗi lưu rạp:", error);
-      alert("Lưu rạp thất bại. Kiểm tra backend hoặc dữ liệu nhập.");
+      console.error("Loi luu rap:", error);
+      alert("Luu rap that bai. Kiem tra backend hoac du lieu nhap.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Bạn có chắc muốn xóa rạp này?");
+    const confirmDelete = window.confirm("Ban co chac muon xoa rap nay?");
 
     if (!confirmDelete) return;
 
     try {
       await deleteTheater(id);
-      alert("Xóa rạp thành công!");
+      alert("Xoa rap thanh cong!");
       loadTheaters();
     } catch (error) {
-      console.error("Lỗi xóa rạp:", error);
-      alert("Xóa rạp thất bại. Có thể rạp đang được lịch chiếu sử dụng.");
+      console.error("Loi xoa rap:", error);
+      alert("Xoa rap that bai. Co the rap dang duoc lich chieu su dung.");
     }
   };
 
   return (
-    <AdminLayout>
-      <section className="theater-page">
-        <div className="theater-card">
-          <div className="theater-header">
-            <div>
-              <span className="page-label">CINEMA MANAGEMENT</span>
-              <h2>Rạp</h2>
-              <p>Quản lý danh sách rạp chiếu phim trong hệ thống.</p>
-            </div>
-
-            <button className="theater-add-btn" onClick={openCreateModal}>
-              + Thêm rạp
-            </button>
+    <section className="theater-page">
+      <div className="theater-card">
+        <div className="theater-header">
+          <div>
+            <span className="page-label">CINEMA MANAGEMENT</span>
+            <h2>Rap</h2>
+            <p>Quan ly danh sach rap chieu phim trong he thong.</p>
           </div>
 
-          <div className="theater-toolbar">
-            <input
-              className="theater-search"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Tìm theo tên rạp, địa chỉ, thành phố..."
-            />
-          </div>
+          <button className="theater-add-btn" onClick={openCreateModal}>
+            + Them rap
+          </button>
+        </div>
 
-          {loading ? (
-            <div className="theater-empty">Đang tải dữ liệu...</div>
-          ) : (
-            <table className="theater-table">
-              <thead>
-                <tr>
-                  <th style={{ width: "80px" }}>ID</th>
-                  <th>Tên rạp</th>
-                  <th>Địa chỉ</th>
-                  <th>Thành phố</th>
-                  <th style={{ width: "110px" }}>Số phòng</th>
-                  <th style={{ width: "130px" }}>Trạng thái</th>
-                  <th style={{ width: "120px" }}>Thao tác</th>
-                </tr>
-              </thead>
+        <div className="theater-toolbar">
+          <input
+            className="theater-search"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="Tim theo ten rap, dia chi, thanh pho..."
+          />
+        </div>
 
-              <tbody>
-                {filteredTheaters.length > 0 ? (
-                  filteredTheaters.map((theater) => (
+        {loading ? (
+          <div className="theater-empty">Dang tai du lieu...</div>
+        ) : (
+          <table className="theater-table">
+            <thead>
+              <tr>
+                <th style={{ width: "70px" }}>ID</th>
+                <th>Rap</th>
+                <th>Dia chi</th>
+                <th>Thanh pho</th>
+                <th style={{ width: "90px" }}>So phong</th>
+                <th style={{ width: "260px" }}>So do ghe</th>
+                <th style={{ width: "120px" }}>Trang thai</th>
+                <th style={{ width: "110px" }}>Thao tac</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {filteredTheaters.length > 0 ? (
+                filteredTheaters.map((theater) => {
+                  const theaterRooms = roomsByTheaterId[String(theater.id)] || [];
+
+                  return (
                     <tr key={theater.id}>
                       <td>{theater.id}</td>
                       <td>
                         <span className="theater-name">{theater.name}</span>
                         <br />
                         <span className="theater-muted">
-                          {theater.location || "Chưa có vị trí"}
+                          {theater.location || "Chua co vi tri"}
                         </span>
                       </td>
                       <td>{theater.address}</td>
-                      <td>{theater.city || "Chưa cập nhật"}</td>
-                      <td>{theater.roomCount || 0}</td>
+                      <td>{theater.city || "Chua cap nhat"}</td>
+                      <td>{theater.roomCount || theaterRooms.length || 0}</td>
+                      <td>
+                        <div className="theater-room-links">
+                          {theaterRooms.length > 0 ? (
+                            theaterRooms.map((room) => (
+                              <Link
+                                key={room.id}
+                                className="theater-seat-link"
+                                to={`/admin/rooms/${room.id}/seats`}
+                                title={`So do ghe ${room.name}`}
+                              >
+                                <EventSeatOutlinedIcon fontSize="small" />
+                                <span>{room.name || `Phong ${room.id}`}</span>
+                              </Link>
+                            ))
+                          ) : (
+                            <span className="theater-muted">Chua co phong</span>
+                          )}
+                        </div>
+                      </td>
                       <td>
                         <span
                           className={`theater-status ${
@@ -222,6 +261,7 @@ function TheaterListPage() {
                           <button
                             className="theater-icon-btn"
                             onClick={() => openEditModal(theater)}
+                            type="button"
                           >
                             <EditOutlinedIcon fontSize="small" />
                           </button>
@@ -229,91 +269,92 @@ function TheaterListPage() {
                           <button
                             className="theater-icon-btn danger"
                             onClick={() => handleDelete(theater.id)}
+                            type="button"
                           >
                             <DeleteOutlineOutlinedIcon fontSize="small" />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="7" className="theater-empty">
-                      Không có rạp phù hợp.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </section>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="8" className="theater-empty">
+                    Khong co rap phu hop.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {showModal && (
         <div className="theater-modal-overlay">
           <div className="theater-modal">
             <div className="theater-modal-header">
-              <h3>{editingTheater ? "Sửa rạp" : "Thêm rạp"}</h3>
+              <h3>{editingTheater ? "Sua rap" : "Them rap"}</h3>
             </div>
 
             <form onSubmit={handleSubmit}>
               <div className="theater-form">
                 <div className="theater-form-grid">
                   <div className="theater-form-group">
-                    <label>Tên rạp</label>
+                    <label>Ten rap</label>
                     <input
                       name="name"
                       value={form.name}
                       onChange={handleChange}
-                      placeholder="Ví dụ: Rạp Cao Lỗ"
+                      placeholder="Vi du: Rap Cao Lo"
                       required
                     />
                   </div>
 
                   <div className="theater-form-group">
-                    <label>Thành phố</label>
+                    <label>Thanh pho</label>
                     <input
                       name="city"
                       value={form.city}
                       onChange={handleChange}
-                      placeholder="Ví dụ: Hồ Chí Minh"
+                      placeholder="Vi du: Ho Chi Minh"
                     />
                   </div>
 
                   <div className="theater-form-group full">
-                    <label>Địa chỉ</label>
+                    <label>Dia chi</label>
                     <input
                       name="address"
                       value={form.address}
                       onChange={handleChange}
-                      placeholder="Ví dụ: 123 Cao Lỗ, Quận 8"
+                      placeholder="Vi du: 123 Cao Lo, Quan 8"
                       required
                     />
                   </div>
 
                   <div className="theater-form-group full">
-                    <label>Vị trí / mô tả vị trí</label>
+                    <label>Vi tri / mo ta vi tri</label>
                     <input
                       name="location"
                       value={form.location}
                       onChange={handleChange}
-                      placeholder="Ví dụ: Tầng 3 trung tâm thương mại"
+                      placeholder="Vi du: Tang 3 trung tam thuong mai"
                     />
                   </div>
 
                   <div className="theater-form-group">
-                    <label>Số phòng chiếu</label>
+                    <label>So phong chieu</label>
                     <input
                       type="number"
                       name="roomCount"
                       value={form.roomCount}
                       onChange={handleChange}
-                      placeholder="Ví dụ: 4"
+                      placeholder="Vi du: 4"
                     />
                   </div>
 
                   <div className="theater-form-group">
-                    <label>Trạng thái</label>
+                    <label>Trang thai</label>
                     <select
                       name="status"
                       value={form.status}
@@ -332,18 +373,18 @@ function TheaterListPage() {
                   className="theater-cancel-btn"
                   onClick={closeModal}
                 >
-                  Đóng
+                  Dong
                 </button>
 
                 <button className="theater-save-btn" disabled={saving}>
-                  {saving ? "Đang lưu..." : "Lưu"}
+                  {saving ? "Dang luu..." : "Luu"}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-    </AdminLayout>
+    </section>
   );
 }
 
