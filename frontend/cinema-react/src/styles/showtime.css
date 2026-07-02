@@ -1,0 +1,361 @@
+.showtime-page {
+  padding: 24px;
+}
+
+.showtime-card {
+  padding: 24px;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.showtime-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.showtime-header h2 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.showtime-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.showtime-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #0f2f4a;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.showtime-add-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.showtime-toolbar {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.showtime-toolbar label,
+.showtime-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.showtime-toolbar label {
+  min-width: 230px;
+}
+
+.showtime-toolbar label span,
+.showtime-form-grid label span {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.showtime-toolbar select,
+.showtime-toolbar input,
+.showtime-form-grid select,
+.showtime-form-grid input {
+  min-height: 43px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  outline: none;
+  background: #fff;
+  color: #1e293b;
+  font: inherit;
+}
+
+.showtime-toolbar select:focus,
+.showtime-toolbar input:focus,
+.showtime-form-grid select:focus,
+.showtime-form-grid input:focus {
+  border-color: #5271e8;
+  box-shadow: 0 0 0 3px rgba(82, 113, 232, 0.12);
+}
+
+.showtime-clear-btn {
+  min-height: 43px;
+  padding: 10px 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #475569;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.showtime-table-wrap {
+  overflow-x: auto;
+}
+
+.showtime-table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+}
+
+.showtime-table th {
+  padding: 13px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.showtime-table td {
+  padding: 15px 14px;
+  border-bottom: 1px solid #edf2f7;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.showtime-date {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #0f2f4a;
+}
+
+.showtime-date div,
+.showtime-table td:nth-child(2),
+.showtime-table td:nth-child(3),
+.showtime-table td:nth-child(4) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.showtime-movie {
+  color: #1e293b;
+}
+
+.showtime-subtext {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.showtime-format {
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #435bd4;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.showtime-pricing-source {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.showtime-status {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.showtime-status.online {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.showtime-status.sold_out {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.showtime-status.cancelled,
+.showtime-status.offline {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.showtime-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.showtime-actions button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9px;
+  background: #eef2ff;
+  color: #435bd4;
+  cursor: pointer;
+}
+
+.showtime-actions button.danger {
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.showtime-empty {
+  padding: 35px !important;
+  color: #64748b !important;
+  text-align: center;
+}
+
+.showtime-modal-overlay {
+  position: fixed;
+  z-index: 1100;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 45px 20px;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.showtime-modal {
+  width: min(760px, 100%);
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.3);
+}
+
+.showtime-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 26px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.showtime-modal-header h3 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 22px;
+}
+
+.showtime-modal-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.showtime-modal-header > button {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.showtime-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px 20px;
+  padding: 24px 26px;
+}
+
+.showtime-form-grid .full {
+  grid-column: 1 / -1;
+}
+
+.showtime-form-grid select:disabled {
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
+
+.showtime-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 11px;
+  padding: 18px 26px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.showtime-modal-actions button {
+  padding: 11px 22px;
+  border-radius: 9px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.showtime-modal-actions .secondary {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #475569;
+}
+
+.showtime-modal-actions .primary {
+  border: 1px solid #0f2f4a;
+  background: #0f2f4a;
+  color: #fff;
+}
+
+.showtime-modal-actions .primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 760px) {
+  .showtime-page {
+    padding: 14px;
+  }
+
+  .showtime-header,
+  .showtime-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .showtime-toolbar label {
+    min-width: 0;
+  }
+
+  .showtime-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .showtime-form-grid .full {
+    grid-column: auto;
+  }
+}

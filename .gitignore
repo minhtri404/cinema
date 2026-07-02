@@ -9,3 +9,8 @@ target/
 .env
 .DS_Store
 Thumbs.db
+
+# Runtime uploads are ignored by default. Curated seed assets can be force-added.
+backend/movie-service/uploads/events/*
+backend/movie-service/uploads/news/*
+backend/movie-service/uploads/promotions/*

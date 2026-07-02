@@ -21,9 +21,37 @@ public class UploadController {
 
     @PostMapping("/movies")
     public ResponseEntity<?> uploadMoviePoster(@RequestParam("file") MultipartFile file) {
+        return uploadImage(file, "movies");
+    }
+
+    @PostMapping("/events")
+    public ResponseEntity<?> uploadEventImage(@RequestParam("file") MultipartFile file) {
+        return uploadImage(file, "events");
+    }
+
+    @PostMapping("/news")
+    public ResponseEntity<?> uploadNewsImage(@RequestParam("file") MultipartFile file) {
+        return uploadImage(file, "news");
+    }
+
+    @PostMapping("/promotions")
+    public ResponseEntity<?> uploadPromotionImage(@RequestParam("file") MultipartFile file) {
+        return uploadImage(file, "promotions");
+    }
+
+    private ResponseEntity<?> uploadImage(MultipartFile file, String folder) {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body("File không được rỗng");
+            }
+
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.matches("image/(jpeg|png|webp)")) {
+                return ResponseEntity.badRequest().body("Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP");
+            }
+
+            if (file.getSize() > 5 * 1024 * 1024) {
+                return ResponseEntity.badRequest().body("Ảnh không được vượt quá 5MB");
             }
 
             String originalFilename = file.getOriginalFilename();
@@ -35,7 +63,7 @@ public class UploadController {
 
             String fileName = UUID.randomUUID() + extension;
 
-            Path uploadPath = Paths.get(uploadDir);
+            Path uploadPath = Paths.get(uploadDir, folder);
 
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
@@ -44,7 +72,7 @@ public class UploadController {
             Path filePath = uploadPath.resolve(fileName);
             Files.copy(file.getInputStream(), filePath);
 
-            String imageUrl = "http://localhost:8081/uploads/movies/" + fileName;
+            String imageUrl = "/uploads/" + folder + "/" + fileName;
 
             return ResponseEntity.ok(Map.of(
                     "fileName", fileName,

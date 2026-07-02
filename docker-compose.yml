@@ -12,6 +12,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+      - ./backend/sample-data.sql:/docker-entrypoint-initdb.d/03-sample-data.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
       interval: 10s
@@ -56,7 +57,7 @@ services:
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
     ports:
-      - "8080:8080"
+      - "18080:8080"
     depends_on:
       - eureka-server
 
@@ -75,7 +76,7 @@ services:
       MYSQL_PASSWORD: 123456
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
     ports:
-      - "8081:8081"
+      - "18081:8081"
     depends_on:
       mysql:
         condition: service_healthy
@@ -96,7 +97,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: 123456
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
     ports:
-      - "8082:8082"
+      - "18082:8082"
     depends_on:
       mysql:
         condition: service_healthy
@@ -117,7 +118,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: 123456
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
     ports:
-      - "8083:8083"
+      - "18083:8083"
     depends_on:
       mysql:
         condition: service_healthy
@@ -138,7 +139,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: 123456
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
     ports:
-      - "8084:8084"
+      - "18084:8084"
     depends_on:
       mysql:
         condition: service_healthy

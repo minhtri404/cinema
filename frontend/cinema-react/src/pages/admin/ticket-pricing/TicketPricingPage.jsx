@@ -20,7 +20,7 @@ const timeLabels = {
 
 const surchargeLabels = {
   ROOM_3D: "3D",
-  ROOM_4D: "4D",
+  ROOM_4DX: "4DX",
   ROOM_IMAX: "IMAX",
   SEAT_VIP: "Ghế VIP",
   SEAT_COUPLE: "Ghế Couple",

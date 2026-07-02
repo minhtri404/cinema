@@ -1,3 +1,6 @@
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
 USE movie_db;
 
 INSERT INTO genres (name, description, active)
@@ -308,49 +311,48 @@ DROP TEMPORARY TABLE seed_room_plan;
 DROP TEMPORARY TABLE seed_row_numbers;
 DROP TEMPORARY TABLE seed_seat_numbers;
 
-INSERT INTO showtimes (movie_id, cinema_id, room_id, start_time, end_time, price, status)
-SELECT v.movie_id, v.cinema_id, v.room_id, v.start_time, v.end_time, v.price, v.status
+INSERT INTO showtimes
+(theater_id, room_id, movie_id, movie_name, show_date, start_time, end_time,
+ audio_language, subtitle_language, format_type, status)
+SELECT v.theater_id, v.room_id, v.movie_id, v.movie_name, v.show_date,
+       v.start_time, v.end_time, 'Việt', 'Tiếng Việt', v.format_type,
+       'ONLINE'
 FROM (
-    SELECT 1 movie_id, 1 cinema_id, 1 room_id,
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 1 DAY), '10:00:00') start_time,
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 1 DAY), '13:01:00') end_time,
-           90000 price, 'ĐANG_MỞ_BÁN' status
+    SELECT 1 theater_id, 1 room_id, 1 movie_id, 'Avengers: Endgame' movie_name,
+           DATE_ADD(CURDATE(), INTERVAL 1 DAY) show_date,
+           '10:00:00' start_time, '13:01:00' end_time, '2D' format_type
     UNION ALL
-    SELECT 2, 1, 2,
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 1 DAY), '14:00:00'),
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 1 DAY), '15:50:00'),
-           95000, 'ĐANG_MỞ_BÁN'
+    SELECT 1, 2, 2, 'Doraemon Movie',
+           DATE_ADD(CURDATE(), INTERVAL 1 DAY),
+           '14:00:00', '15:50:00', '3D'
     UNION ALL
-    SELECT 3, 1, 3,
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 1 DAY), '19:30:00'),
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 1 DAY), '22:16:00'),
-           130000, 'ĐANG_MỞ_BÁN'
+    SELECT 1, 3, 3, 'Lật Mặt 8',
+           DATE_ADD(CURDATE(), INTERVAL 1 DAY),
+           '19:30:00', '22:16:00', 'IMAX'
     UNION ALL
-    SELECT 4, 2, 4,
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 2 DAY), '09:30:00'),
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 2 DAY), '11:06:00'),
-           85000, 'ĐANG_MỞ_BÁN'
+    SELECT 2, 4, 4, 'Movie 4',
+           DATE_ADD(CURDATE(), INTERVAL 2 DAY),
+           '09:30:00', '11:06:00', '2D'
     UNION ALL
-    SELECT 5, 2, 5,
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 2 DAY), '16:45:00'),
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 2 DAY), '18:36:00'),
-           105000, 'ĐANG_MỞ_BÁN'
+    SELECT 2, 5, 5, 'Movie 5',
+           DATE_ADD(CURDATE(), INTERVAL 2 DAY),
+           '16:45:00', '18:36:00', '3D'
     UNION ALL
-    SELECT 6, 3, 6,
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 3 DAY), '20:15:00'),
-           TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 3 DAY), '23:01:00'),
-           125000, 'ĐANG_MỞ_BÁN'
+    SELECT 3, 6, 6, 'Movie 6',
+           DATE_ADD(CURDATE(), INTERVAL 3 DAY),
+           '20:15:00', '23:01:00', '2D'
 ) v
 WHERE NOT EXISTS (
     SELECT 1 FROM showtimes s
     WHERE s.movie_id = v.movie_id
       AND s.room_id = v.room_id
+      AND s.show_date = v.show_date
       AND s.start_time = v.start_time
 );
 
 UPDATE showtimes
 SET status = CASE status
-        WHEN 'OPEN' THEN 'ĐANG_MỞ_BÁN'
+        WHEN 'OPEN' THEN 'ONLINE'
         ELSE status
     END;
 
@@ -374,53 +376,17 @@ CREATE TABLE IF NOT EXISTS ticket_surcharges (
 );
 
 INSERT INTO ticket_pricing (day_group, time_slot, student_price, adult_price, child_senior_price, member_online_price)
-SELECT v.day_group, v.time_slot, v.student_price, v.adult_price, v.child_senior_price, v.member_online_price
-FROM (
-    SELECT 'THỨ_2_ĐẾN_THỨ_5' day_group, 'TRƯỚC_17H' time_slot, 55000 student_price, 75000 adult_price, 50000 child_senior_price, 70000 member_online_price
-    UNION ALL
-    SELECT 'THỨ_2_ĐẾN_THỨ_5', 'SAU_17H', 65000, 90000, 60000, 85000
-    UNION ALL
-    SELECT 'THỨ_6_ĐẾN_CN', 'TRƯỚC_17H', 70000, 95000, 65000, 90000
-    UNION ALL
-    SELECT 'THỨ_6_ĐẾN_CN', 'SAU_17H', 80000, 115000, 75000, 105000
-    UNION ALL
-    SELECT 'NGÀY_LỄ', 'CẢ_NGÀY', 90000, 130000, 85000, 120000
-) v
-WHERE NOT EXISTS (
-    SELECT 1 FROM ticket_pricing p
-    WHERE p.day_group = v.day_group
-      AND p.time_slot = v.time_slot
-);
-
-UPDATE ticket_pricing p
-JOIN (
-    SELECT 'MON_THU' old_day_group, 'BEFORE_17H' old_time_slot, 'THỨ_2_ĐẾN_THỨ_5' day_group, 'TRƯỚC_17H' time_slot, 55000 student_price, 75000 adult_price, 50000 child_senior_price, 70000 member_online_price
-    UNION ALL
-    SELECT 'MON_THU', 'AFTER_17H', 'THỨ_2_ĐẾN_THỨ_5', 'SAU_17H', 65000, 90000, 60000, 85000
-    UNION ALL
-    SELECT 'FRI_SUN', 'BEFORE_17H', 'THỨ_6_ĐẾN_CN', 'TRƯỚC_17H', 70000, 95000, 65000, 90000
-    UNION ALL
-    SELECT 'FRI_SUN', 'AFTER_17H', 'THỨ_6_ĐẾN_CN', 'SAU_17H', 80000, 115000, 75000, 105000
-    UNION ALL
-    SELECT 'HOLIDAY', 'ALL_DAY', 'NGÀY_LỄ', 'CẢ_NGÀY', 90000, 130000, 85000, 120000
-) v ON (p.day_group = v.old_day_group AND p.time_slot = v.old_time_slot)
-     OR (p.day_group = v.day_group AND p.time_slot = v.time_slot)
-SET p.day_group = v.day_group,
-    p.time_slot = v.time_slot,
-    p.student_price = v.student_price,
-    p.adult_price = v.adult_price,
-    p.child_senior_price = v.child_senior_price,
-    p.member_online_price = v.member_online_price;
-
-DELETE p
-FROM ticket_pricing p
-JOIN (
-    SELECT day_group, time_slot, MIN(id) keep_id
-    FROM ticket_pricing
-    GROUP BY day_group, time_slot
-    HAVING COUNT(*) > 1
-) d ON d.day_group = p.day_group AND d.time_slot = p.time_slot
-WHERE p.id <> d.keep_id;
+VALUES
+('MON_THU', 'BEFORE_17H', 55000, 75000, 50000, 70000),
+('MON_THU', 'AFTER_17H', 65000, 90000, 60000, 85000),
+('FRI_SUN', 'BEFORE_17H', 70000, 95000, 65000, 90000),
+('FRI_SUN', 'AFTER_17H', 80000, 115000, 75000, 105000),
+('HOLIDAY', 'ALL_DAY', 90000, 130000, 85000, 120000)
+ON DUPLICATE KEY UPDATE
+    student_price = VALUES(student_price),
+    adult_price = VALUES(adult_price),
+    child_senior_price = VALUES(child_senior_price),
+    member_online_price = VALUES(member_online_price);
 
 INSERT INTO ticket_surcharges (surcharge_key, surcharge_name, amount)
 VALUES

@@ -8,6 +8,9 @@ import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import MeetingRoomOutlinedIcon from "@mui/icons-material/MeetingRoomOutlined";
 import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
+import CelebrationOutlinedIcon from "@mui/icons-material/CelebrationOutlined";
+import NewspaperOutlinedIcon from "@mui/icons-material/NewspaperOutlined";
+import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import { NavLink } from "react-router-dom";
 
 const menuItems = [
@@ -17,6 +20,9 @@ const menuItems = [
   { label: "Rạp", path: "/admin/theaters", Icon: StorefrontOutlinedIcon },
   { label: "Phòng chiếu", path: "/admin/rooms", Icon: MeetingRoomOutlinedIcon },
   { label: "Lịch chiếu", path: "/admin/showtimes", Icon: CalendarMonthRoundedIcon },
+  { label: "Sự kiện", path: "/admin/events", Icon: CelebrationOutlinedIcon },
+  { label: "Tin tức", path: "/admin/news", Icon: NewspaperOutlinedIcon },
+  { label: "Khuyến mãi", path: "/admin/promotions", Icon: LocalOfferOutlinedIcon },
   { label: "Vé", path: "/admin/bookings", Icon: ConfirmationNumberRoundedIcon },
   { label: "Giá vé", path: "/admin/ticket-pricing", Icon: PaidOutlinedIcon },
   { label: "Người dùng", path: "/admin/users", Icon: GroupRoundedIcon },
