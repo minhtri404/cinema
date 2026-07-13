@@ -23,6 +23,8 @@ public class BookingSeat {
 
     private String seatCode;
 
+    private String seatType;
+
     private BigDecimal price;
 
     @ManyToOne

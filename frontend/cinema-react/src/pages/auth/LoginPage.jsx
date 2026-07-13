@@ -1,12 +1,12 @@
-import TheatersRoundedIcon from "@mui/icons-material/TheatersRounded";
+﻿import TheatersRoundedIcon from "@mui/icons-material/TheatersRounded";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginAdmin } from "../../api/authApi";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("admin@gmail.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("admin@example.invalid");
+  const [password, setPassword] = useState("demo_password_change_me");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -91,3 +91,5 @@ function LoginPage() {
 }
 
 export default LoginPage;
+
+

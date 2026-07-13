@@ -6,15 +6,15 @@ export default defineConfig({
   server: {
     proxy: {
       "/api/uploads": {
-        target: "http://localhost:18081",
+        target: "http://localhost:8081",
         changeOrigin: true,
       },
       "/uploads": {
-        target: "http://localhost:18081",
+        target: "http://localhost:8081",
         changeOrigin: true,
       },
       "/api": {
-        target: "http://localhost:18080",
+        target: "http://localhost:8080",
         changeOrigin: true,
       },
     },

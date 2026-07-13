@@ -1,4 +1,4 @@
-# Huong Dan Chay Backend
+﻿# Huong Dan Chay Backend
 
 Backend duoc tach theo mo hinh microservice, gom Eureka Server, API Gateway, MySQL va RabbitMQ.
 
@@ -22,14 +22,14 @@ Thong tin ket noi MySQL:
 - Host: `localhost`
 - Port: `3307`
 - User: `root`
-- Password: `123456`
+- Password: `demo_password_change_me`
 - Container: `cinema-mysql`
 
 RabbitMQ dashboard:
 
 - URL: `http://localhost:15672`
 - User: `admin`
-- Password: `123456`
+- Password: `demo_password_change_me`
 
 ## File SQL khoi tao du lieu
 
@@ -72,19 +72,19 @@ Dung cach nay khi MySQL dang chay va ban chi muon nap lai file SQL ma khong xoa 
 PowerShell:
 
 ```powershell
-Get-Content .\docker\mysql\init\02-create-tables.sql | docker exec -i cinema-mysql mysql -uroot -p123456
+Get-Content .\docker\mysql\init\02-create-tables.sql | docker exec -i cinema-mysql mysql -uroot -pdemo_password_change_me
 ```
 
 CMD:
 
 ```bat
-docker exec -i cinema-mysql mysql -uroot -p123456 < docker\mysql\init\02-create-tables.sql
+docker exec -i cinema-mysql mysql -uroot -pdemo_password_change_me < docker\mysql\init\02-create-tables.sql
 ```
 
 Kiem tra du lieu sau khi import:
 
 ```powershell
-docker exec -it cinema-mysql mysql -uroot -p123456
+docker exec -it cinema-mysql mysql -uroot -pdemo_password_change_me
 ```
 
 Trong MySQL:
@@ -176,5 +176,82 @@ mvn spring-boot:run
 
 Neu da import `02-create-tables.sql`, co the dang nhap frontend bang:
 
-- Email: `admin@gmail.com`
-- Password: `123456`
+- Email: `admin@example.invalid`
+- Password: `demo_password_change_me`
+
+## Docker, Actuator va Circuit Breaker
+
+Luu y: Dockerfile hien copy file `.jar` tu thu muc `target/` cua tung service de tranh loi Maven download dependency trong Docker build. Neu sua code Java, build jar truoc:
+
+```powershell
+mvn -q -DskipTests package
+```
+
+Chay toan bo backend tu thu muc `backend`:
+
+```powershell
+docker compose up --build
+```
+
+Compose hien chay 7 container:
+
+- `cinema-mysql`
+- `cinema-eureka-server`
+- `cinema-api-gateway`
+- `cinema-movie-service`
+- `cinema-showtime-service`
+- `cinema-booking-service`
+- `cinema-user-service`
+
+Database dung Docker volume `mysql_data`:
+
+```yaml
+volumes:
+  mysql_data:
+```
+
+Kiem tra Actuator:
+
+```powershell
+curl http://localhost:8080/actuator/health
+curl http://localhost:8080/actuator/metrics
+curl http://localhost:8083/actuator/health
+curl http://localhost:8083/actuator/metrics
+```
+
+Circuit Breaker duoc dat trong `booking-service`. Trong project cinema, `booking-service` dong vai tro Order Service va `movie-service` dong vai tro Product Service.
+
+Khi `movie-service` dang chay:
+
+```powershell
+curl http://localhost:8080/api/bookings/product/1
+```
+
+Ket qua mong doi: tra ve thong tin phim tu `movie-service`.
+
+Dung Product/Movie Service:
+
+```powershell
+docker compose stop movie-service
+curl http://localhost:8080/api/bookings/product/1
+```
+
+Ket qua mong doi: `booking-service` khong bi loi 500, Circuit Breaker tra fallback:
+
+```json
+{
+  "id": 1,
+  "available": false,
+  "fallback": true,
+  "message": "Product/Movie Service is unavailable. Booking Service fallback response was returned.",
+  "error": "ResourceAccessException"
+}
+```
+
+Bat lai service:
+
+```powershell
+docker compose start movie-service
+```
+
+

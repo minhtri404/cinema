@@ -1,4 +1,4 @@
-package com.example.user_service.controller;
+﻿package com.example.user_service.controller;
 
 import com.example.user_service.dto.LoginRequest;
 import com.example.user_service.dto.LoginResponse;
@@ -38,15 +38,15 @@ public class AuthController {
 
     @PostMapping("/create-admin")
     public User createAdmin() {
-        if (userRepository.findByEmail("admin@gmail.com").isPresent()) {
-            return userRepository.findByEmail("admin@gmail.com").get();
+        if (userRepository.findByEmail("admin@example.invalid").isPresent()) {
+            return userRepository.findByEmail("admin@example.invalid").get();
         }
 
         User admin = User.builder()
-                .fullName("Admin Cinema")
-                .email("admin@gmail.com")
-                .password("123456")
-                .phone("0900000000")
+                .fullName("Demo Admin")
+                .email("admin@example.invalid")
+                .password("demo_password_change_me")
+                .phone("")
                 .role("ADMIN")
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -54,3 +54,6 @@ public class AuthController {
         return userRepository.save(admin);
     }
 }
+
+
+

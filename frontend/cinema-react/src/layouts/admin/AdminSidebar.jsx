@@ -1,16 +1,18 @@
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
+import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
+import CelebrationOutlinedIcon from "@mui/icons-material/CelebrationOutlined";
 import ConfirmationNumberRoundedIcon from "@mui/icons-material/ConfirmationNumberRounded";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import GroupRoundedIcon from "@mui/icons-material/GroupRounded";
-import MovieRoundedIcon from "@mui/icons-material/MovieRounded";
-import TheatersRoundedIcon from "@mui/icons-material/TheatersRounded";
-import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
-import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
-import MeetingRoomOutlinedIcon from "@mui/icons-material/MeetingRoomOutlined";
-import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
-import CelebrationOutlinedIcon from "@mui/icons-material/CelebrationOutlined";
-import NewspaperOutlinedIcon from "@mui/icons-material/NewspaperOutlined";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
+import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
+import MeetingRoomOutlinedIcon from "@mui/icons-material/MeetingRoomOutlined";
+import MovieRoundedIcon from "@mui/icons-material/MovieRounded";
+import NewspaperOutlinedIcon from "@mui/icons-material/NewspaperOutlined";
+import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
+import RestaurantMenuOutlinedIcon from "@mui/icons-material/RestaurantMenuOutlined";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+import TheatersRoundedIcon from "@mui/icons-material/TheatersRounded";
 import { NavLink } from "react-router-dom";
 
 const menuItems = [
@@ -23,10 +25,11 @@ const menuItems = [
   { label: "Sự kiện", path: "/admin/events", Icon: CelebrationOutlinedIcon },
   { label: "Tin tức", path: "/admin/news", Icon: NewspaperOutlinedIcon },
   { label: "Khuyến mãi", path: "/admin/promotions", Icon: LocalOfferOutlinedIcon },
+  { label: "Thức ăn", path: "/admin/foods", Icon: RestaurantMenuOutlinedIcon },
   { label: "Vé", path: "/admin/bookings", Icon: ConfirmationNumberRoundedIcon },
   { label: "Giá vé", path: "/admin/ticket-pricing", Icon: PaidOutlinedIcon },
   { label: "Người dùng", path: "/admin/users", Icon: GroupRoundedIcon },
-
+  { label: "Nhân viên", path: "/admin/staff", Icon: ManageAccountsOutlinedIcon },
 ];
 
 function Sidebar() {
@@ -36,7 +39,6 @@ function Sidebar() {
         <div className="brand-icon">
           <TheatersRoundedIcon />
         </div>
-
         <div>
           <span>Admin Cinema</span>
           <p>Management</p>
