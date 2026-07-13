@@ -39,6 +39,16 @@ public class UploadController {
         return uploadImage(file, "promotions");
     }
 
+    @PostMapping("/foods")
+    public ResponseEntity<?> uploadFoodImage(@RequestParam("file") MultipartFile file) {
+        return uploadImage(file, "foods");
+    }
+
+    @PostMapping("/combos")
+    public ResponseEntity<?> uploadComboImage(@RequestParam("file") MultipartFile file) {
+        return uploadImage(file, "combos");
+    }
+
     private ResponseEntity<?> uploadImage(MultipartFile file, String folder) {
         try {
             if (file.isEmpty()) {

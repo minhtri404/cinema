@@ -17,6 +17,7 @@ import EventPage from "../pages/admin/events/EventPage";
 import NewsPage from "../pages/admin/news/NewsPage";
 import PromotionPage from "../pages/admin/promotions/PromotionPage";
 import FoodPage from "../pages/admin/foods/FoodPage";
+import ComboPage from "../pages/admin/combos/ComboPage";
 import StaffPage from "../pages/admin/staff/StaffPage";
 import UserPage from "../pages/admin/users/UserPage";
 import BookingPage from "../pages/admin/bookings/BookingPage";
@@ -36,6 +37,7 @@ function AppRoutes() {
         <Route path="/admin/news" element={withAdminLayout(<NewsPage />)} />
         <Route path="/admin/promotions" element={withAdminLayout(<PromotionPage />)} />
         <Route path="/admin/foods" element={withAdminLayout(<FoodPage />)} />
+        <Route path="/admin/combos" element={withAdminLayout(<ComboPage />)} />
         <Route path="/admin/bookings" element={withAdminLayout(<BookingPage />)} />
         <Route path="/admin/users" element={withAdminLayout(<UserPage />)} />
         <Route path="/admin/staff" element={withAdminLayout(<StaffPage />)} />

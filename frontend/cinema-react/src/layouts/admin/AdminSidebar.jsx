@@ -12,6 +12,7 @@ import NewspaperOutlinedIcon from "@mui/icons-material/NewspaperOutlined";
 import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
 import RestaurantMenuOutlinedIcon from "@mui/icons-material/RestaurantMenuOutlined";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+import TapasOutlinedIcon from "@mui/icons-material/TapasOutlined";
 import TheatersRoundedIcon from "@mui/icons-material/TheatersRounded";
 import { NavLink } from "react-router-dom";
 
@@ -26,6 +27,7 @@ const menuItems = [
   { label: "Tin tức", path: "/admin/news", Icon: NewspaperOutlinedIcon },
   { label: "Khuyến mãi", path: "/admin/promotions", Icon: LocalOfferOutlinedIcon },
   { label: "Thức ăn", path: "/admin/foods", Icon: RestaurantMenuOutlinedIcon },
+  { label: "Combo", path: "/admin/combos", Icon: TapasOutlinedIcon },
   { label: "Vé", path: "/admin/bookings", Icon: ConfirmationNumberRoundedIcon },
   { label: "Giá vé", path: "/admin/ticket-pricing", Icon: PaidOutlinedIcon },
   { label: "Người dùng", path: "/admin/users", Icon: GroupRoundedIcon },

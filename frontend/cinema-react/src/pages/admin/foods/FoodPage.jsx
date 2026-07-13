@@ -4,7 +4,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import RestaurantMenuOutlinedIcon from "@mui/icons-material/RestaurantMenuOutlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
-import { createFood, deleteFood, getFoods, updateFood, updateFoodStock } from "../../../api/foodApi";
+import { createFood, deleteFood, getFoods, updateFood, updateFoodStock, uploadFoodImage } from "../../../api/foodApi";
 import "../../../styles/food.css";
 
 const emptyForm = () => ({
@@ -39,6 +39,8 @@ function FoodPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingFood, setEditingFood] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [imageFile, setImageFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
   const loadFoods = async () => {
@@ -76,13 +78,21 @@ function FoodPage() {
     return { total: foods.length, active, lowStock, inventoryValue };
   }, [foods]);
 
+  const resetImage = () => {
+    if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    setImageFile(null);
+    setPreviewUrl("");
+  };
+
   const openCreate = () => {
+    resetImage();
     setEditingFood(null);
     setForm(emptyForm());
     setModalOpen(true);
   };
 
   const openEdit = (food) => {
+    resetImage();
     setEditingFood(food);
     setForm({
       sku: food.sku || "",
@@ -98,11 +108,13 @@ function FoodPage() {
       status: food.status || "ACTIVE",
       displayOrder: food.displayOrder ?? "0",
     });
+    setPreviewUrl(food.imageUrl || "");
     setModalOpen(true);
   };
 
   const closeModal = () => {
     if (saving) return;
+    resetImage();
     setEditingFood(null);
     setForm(emptyForm());
     setModalOpen(false);
@@ -114,6 +126,27 @@ function FoodPage() {
       ...current,
       [name]: name === "sku" ? value.toUpperCase().replace(/\s+/g, "") : value,
     }));
+  };
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      alert("Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Ảnh không được vượt quá 5MB.");
+      event.target.value = "";
+      return;
+    }
+
+    if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    setImageFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
   };
 
   const payloadFromForm = () => ({
@@ -129,11 +162,17 @@ function FoodPage() {
     event.preventDefault();
     try {
       setSaving(true);
+      let imageUrl = form.imageUrl;
+      if (imageFile) {
+        const uploadResponse = await uploadFoodImage(imageFile);
+        imageUrl = uploadResponse.data?.url || "";
+      }
+      const payload = { ...payloadFromForm(), imageUrl };
       if (editingFood) {
-        await updateFood(editingFood.id, payloadFromForm());
+        await updateFood(editingFood.id, payload);
         alert("Cập nhật thức ăn thành công.");
       } else {
-        await createFood(payloadFromForm());
+        await createFood(payload);
         alert("Thêm thức ăn thành công.");
       }
       closeModal();
@@ -291,6 +330,18 @@ function FoodPage() {
                 <label><span>Trạng thái</span><select name="status" value={form.status} onChange={handleChange}><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option><option value="OUT_OF_STOCK">OUT_OF_STOCK</option></select></label>
                 <label><span>Thứ tự</span><input type="number" min="0" name="displayOrder" value={form.displayOrder} onChange={handleChange} /></label>
                 <label className="full"><span>URL ảnh</span><input name="imageUrl" value={form.imageUrl} onChange={handleChange} placeholder="https://..." /></label>
+                <div className="food-upload-field full">
+                  <label>
+                    <span>Ảnh món</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageChange} />
+                    <small>Chọn ảnh từ máy. JPG, PNG, WEBP tối đa 5MB.</small>
+                  </label>
+                  {previewUrl || form.imageUrl ? (
+                    <img src={previewUrl || form.imageUrl} alt="Xem trước món" />
+                  ) : (
+                    <div className="food-upload-empty"><RestaurantMenuOutlinedIcon /></div>
+                  )}
+                </div>
               </div>
               <div className="food-modal-actions">
                 <button type="button" className="secondary" onClick={closeModal}>Hủy</button>

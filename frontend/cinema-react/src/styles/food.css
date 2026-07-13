@@ -46,6 +46,14 @@
 .food-form-grid label span { color: #475569; font-size: 13px; font-weight: 700; }
 .food-form-grid input, .food-form-grid select, .food-form-grid textarea { min-height: 43px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 9px; outline: 0; color: #1e293b; font: inherit; resize: vertical; }
 .food-form-grid input:focus, .food-form-grid select:focus, .food-form-grid textarea:focus { border-color: #0f766e; box-shadow: 0 0 0 3px rgba(15, 118, 110, .12); }
+.food-form-grid label:has(input[name="imageUrl"]) { display: none; }
+.food-upload-field { display: grid; grid-template-columns: minmax(0, 1fr) 160px; gap: 14px; align-items: stretch; }
+.food-upload-field label { padding: 14px; border: 1px dashed #99f6e4; border-radius: 12px; background: #f0fdfa; }
+.food-upload-field input[type="file"] { border: 0; background: #fff; }
+.food-upload-field small { color: #64748b; font-size: 12px; }
+.food-upload-field img, .food-upload-empty { width: 160px; height: 130px; border-radius: 12px; background: #ecfeff; }
+.food-upload-field img { object-fit: cover; }
+.food-upload-empty { display: grid; place-items: center; color: #0f766e; }
 .food-modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 18px 26px; border-top: 1px solid #e2e8f0; }
 .food-modal-actions button { padding: 11px 22px; border-radius: 9px; font-weight: 800; cursor: pointer; }
 .food-modal-actions .secondary { border: 1px solid #cbd5e1; background: #fff; color: #475569; }
@@ -55,5 +63,7 @@
   .food-page { padding: 14px; }
   .food-header, .food-toolbar { align-items: stretch; flex-direction: column; }
   .food-summary, .food-form-grid { grid-template-columns: 1fr; }
+  .food-upload-field { grid-template-columns: 1fr; }
+  .food-upload-field img, .food-upload-empty { width: 100%; }
   .food-form-grid .full { grid-column: auto; }
 }
