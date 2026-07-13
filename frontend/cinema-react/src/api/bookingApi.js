@@ -2,6 +2,8 @@ import axiosClient from "./axiosClient";
 
 export const getBookings = () => axiosClient.get("/api/bookings/tickets");
 
+export const createBooking = (data) => axiosClient.post("/api/bookings", data);
+
 export const cancelBooking = (id) => axiosClient.put(`/api/bookings/${id}/cancel`);
 
 export const useTicket = (id) => axiosClient.put(`/api/bookings/${id}/use-ticket`);

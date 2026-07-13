@@ -21,6 +21,8 @@ import ComboPage from "../pages/admin/combos/ComboPage";
 import StaffPage from "../pages/admin/staff/StaffPage";
 import UserPage from "../pages/admin/users/UserPage";
 import BookingPage from "../pages/admin/bookings/BookingPage";
+import AdvertisementPage from "../pages/admin/advertisements/AdvertisementPage";
+import TicketScanPage from "../pages/admin/ticket-scan/TicketScanPage";
 const withAdminLayout = (page) => <AdminLayout>{page}</AdminLayout>;
 
 function AppRoutes() {
@@ -39,6 +41,8 @@ function AppRoutes() {
         <Route path="/admin/foods" element={withAdminLayout(<FoodPage />)} />
         <Route path="/admin/combos" element={withAdminLayout(<ComboPage />)} />
         <Route path="/admin/bookings" element={withAdminLayout(<BookingPage />)} />
+        <Route path="/admin/ticket-scan" element={withAdminLayout(<TicketScanPage />)} />
+        <Route path="/admin/advertisements" element={withAdminLayout(<AdvertisementPage />)} />
         <Route path="/admin/users" element={withAdminLayout(<UserPage />)} />
         <Route path="/admin/staff" element={withAdminLayout(<StaffPage />)} />
         <Route path="/admin/genres" element={withAdminLayout(<GenreListPage />)} />

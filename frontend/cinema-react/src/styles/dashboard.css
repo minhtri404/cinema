@@ -290,6 +290,14 @@
   background: #6366f1;
 }
 
+.status-dot.counter {
+  background: #0ea5e9;
+}
+
+.status-dot.online {
+  background: #10b981;
+}
+
 .recent-table-wrap {
   overflow-x: auto;
 }

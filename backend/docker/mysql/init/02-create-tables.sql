@@ -24,6 +24,45 @@ CREATE DATABASE /*!32312 IF NOT EXISTS*/ `movie_db` /*!40100 DEFAULT CHARACTER S
 USE `movie_db`;
 
 --
+-- Table structure for table `advertisements`
+--
+
+DROP TABLE IF EXISTS `advertisements`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `advertisements` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `created_at` datetime(6) NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `display_order` int NOT NULL,
+  `end_date` date NOT NULL,
+  `image_url` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `placement` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `start_date` date NOT NULL,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `target_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `updated_at` datetime(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_advertisements_title` (`title`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `advertisements`
+--
+
+LOCK TABLES `advertisements` WRITE;
+/*!40000 ALTER TABLE `advertisements` DISABLE KEYS */;
+INSERT INTO `advertisements` VALUES
+(1,'2026-07-13 20:40:00.000000','Banner hero giới thiệu cụm phim bom tấn trong tuần.',1,'2026-08-31','https://placehold.co/960x360/111827/ffffff?text=Blockbuster+Premiere','HOME_BANNER','2026-07-13','ONLINE','/admin/movies','Blockbuster Premiere','2026-07-13 20:40:00.000000'),
+(2,'2026-07-13 20:40:00.000000','Quảng cáo combo bắp nước bán kèm vé online.',2,'2026-09-15','https://placehold.co/960x360/f97316/ffffff?text=Popcorn+Combo','HOME_BANNER','2026-07-13','ONLINE','/admin/combos','Popcorn Combo Deal','2026-07-13 20:40:00.000000'),
+(3,'2026-07-13 20:40:00.000000','Banner ưu đãi thành viên mới.',3,'2026-10-01','https://placehold.co/960x360/2563eb/ffffff?text=Member+Offer','PROMOTION_BANNER','2026-07-13','ONLINE','/admin/promotions','Member Offer Banner','2026-07-13 20:40:00.000000'),
+(4,'2026-07-13 20:40:00.000000','Banner app mobile đặt vé nhanh.',4,'2026-09-30','https://placehold.co/960x360/7c3aed/ffffff?text=Book+Tickets+Online','SIDEBAR_BANNER','2026-07-13','OFFLINE','/admin/bookings','Book Tickets Online','2026-07-13 20:40:00.000000');
+/*!40000 ALTER TABLE `advertisements` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `events`
 --
 

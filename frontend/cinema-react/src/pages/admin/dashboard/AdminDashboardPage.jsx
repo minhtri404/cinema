@@ -44,6 +44,8 @@ const getSeatText = (booking) =>
 
 const safeData = (result) => (result.status === "fulfilled" ? result.value.data || [] : []);
 
+const isCounterSale = (booking) => Number(booking.userId || 0) === 0;
+
 function DashboardPage() {
   const auth = JSON.parse(localStorage.getItem("auth") || "{}");
   const [data, setData] = useState({
@@ -97,6 +99,10 @@ function DashboardPage() {
     const { movies, showtimes, bookings, users, foods } = data;
     const today = todayString();
     const paidBookings = bookings.filter((booking) => booking.status === "PAID");
+    const counterBookings = bookings.filter(isCounterSale);
+    const onlineBookings = bookings.filter((booking) => !isCounterSale(booking));
+    const paidCounterBookings = paidBookings.filter(isCounterSale);
+    const paidOnlineBookings = paidBookings.filter((booking) => !isCounterSale(booking));
     const pendingBookings = bookings.filter((booking) => booking.status === "PENDING");
     const cancelledBookings = bookings.filter((booking) => booking.status === "CANCELLED");
     const usedTickets = bookings.filter((booking) => booking.ticket?.status === "USED");
@@ -120,6 +126,8 @@ function DashboardPage() {
       { label: "Chờ thanh toán", value: pendingBookings.length, tone: "pending" },
       { label: "Đã hủy", value: cancelledBookings.length, tone: "cancelled" },
       { label: "Vé đã dùng", value: usedTickets.length, tone: "used" },
+      { label: "Bán tại quầy", value: counterBookings.length, tone: "counter" },
+      { label: "Vé online", value: onlineBookings.length, tone: "online" },
     ];
 
     const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
@@ -146,6 +154,10 @@ function DashboardPage() {
       today,
       revenue,
       paidBookings,
+      counterBookings,
+      onlineBookings,
+      paidCounterBookings,
+      paidOnlineBookings,
       pendingBookings,
       validTickets,
       customers,
@@ -183,6 +195,20 @@ function DashboardPage() {
       detail: `${dashboard.validTickets.length} vé còn hiệu lực`,
       Icon: ConfirmationNumberRoundedIcon,
       tone: "orange",
+    },
+    {
+      label: "Vé tại quầy",
+      value: dashboard.paidCounterBookings.length,
+      detail: `${dashboard.counterBookings.length} booking tại quầy`,
+      Icon: ConfirmationNumberRoundedIcon,
+      tone: "blue",
+    },
+    {
+      label: "Vé online",
+      value: dashboard.paidOnlineBookings.length,
+      detail: `${dashboard.onlineBookings.length} booking online`,
+      Icon: ConfirmationNumberRoundedIcon,
+      tone: "green",
     },
     {
       label: "Doanh thu",
@@ -290,6 +316,7 @@ function DashboardPage() {
                   <th>Khách hàng</th>
                   <th>Phim</th>
                   <th>Ghế</th>
+                  <th>Nguồn</th>
                   <th>Tổng tiền</th>
                   <th>Trạng thái</th>
                 </tr>
@@ -297,7 +324,7 @@ function DashboardPage() {
               <tbody>
                 {dashboard.recentBookings.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="dashboard-empty">Chưa có booking.</td>
+                    <td colSpan="7" className="dashboard-empty">Chưa có booking.</td>
                   </tr>
                 ) : (
                   dashboard.recentBookings.map((booking) => (
@@ -309,6 +336,7 @@ function DashboardPage() {
                       <td>{booking.customerName || `User #${booking.userId}`}</td>
                       <td>{booking.movieTitle || `Showtime #${booking.showtimeId}`}</td>
                       <td>{getSeatText(booking)}</td>
+                      <td>{isCounterSale(booking) ? "Tại quầy" : "Online"}</td>
                       <td>{fullMoney(booking.totalAmount)}</td>
                       <td>
                         <span className={`dashboard-status ${booking.status?.toLowerCase()}`}>

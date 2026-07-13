@@ -49,6 +49,11 @@ public class UploadController {
         return uploadImage(file, "combos");
     }
 
+    @PostMapping("/advertisements")
+    public ResponseEntity<?> uploadAdvertisementImage(@RequestParam("file") MultipartFile file) {
+        return uploadImage(file, "advertisements");
+    }
+
     private ResponseEntity<?> uploadImage(MultipartFile file, String folder) {
         try {
             if (file.isEmpty()) {

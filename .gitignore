@@ -1,6 +1,9 @@
 target/
 *.log
 *.zip
+*.bak-*
+03-current-dump.sql
+clean-admin-seed.sql
 
 .idea/
 .vscode/

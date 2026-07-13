@@ -1,4 +1,5 @@
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
+import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import CelebrationOutlinedIcon from "@mui/icons-material/CelebrationOutlined";
 import ConfirmationNumberRoundedIcon from "@mui/icons-material/ConfirmationNumberRounded";
@@ -10,6 +11,7 @@ import MeetingRoomOutlinedIcon from "@mui/icons-material/MeetingRoomOutlined";
 import MovieRoundedIcon from "@mui/icons-material/MovieRounded";
 import NewspaperOutlinedIcon from "@mui/icons-material/NewspaperOutlined";
 import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
+import QrCodeScannerOutlinedIcon from "@mui/icons-material/QrCodeScannerOutlined";
 import RestaurantMenuOutlinedIcon from "@mui/icons-material/RestaurantMenuOutlined";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import TapasOutlinedIcon from "@mui/icons-material/TapasOutlined";
@@ -18,6 +20,7 @@ import { NavLink } from "react-router-dom";
 
 const menuItems = [
   { label: "Dashboard", path: "/admin", Icon: DashboardRoundedIcon },
+  { label: "Quảng cáo", path: "/admin/advertisements", Icon: CampaignOutlinedIcon },
   { label: "Phim", path: "/admin/movies", Icon: MovieRoundedIcon },
   { label: "Thể loại", path: "/admin/genres", Icon: CategoryOutlinedIcon },
   { label: "Rạp", path: "/admin/theaters", Icon: StorefrontOutlinedIcon },
@@ -29,6 +32,7 @@ const menuItems = [
   { label: "Thức ăn", path: "/admin/foods", Icon: RestaurantMenuOutlinedIcon },
   { label: "Combo", path: "/admin/combos", Icon: TapasOutlinedIcon },
   { label: "Vé", path: "/admin/bookings", Icon: ConfirmationNumberRoundedIcon },
+  { label: "Quét vé", path: "/admin/ticket-scan", Icon: QrCodeScannerOutlinedIcon },
   { label: "Giá vé", path: "/admin/ticket-pricing", Icon: PaidOutlinedIcon },
   { label: "Người dùng", path: "/admin/users", Icon: GroupRoundedIcon },
   { label: "Nhân viên", path: "/admin/staff", Icon: ManageAccountsOutlinedIcon },
