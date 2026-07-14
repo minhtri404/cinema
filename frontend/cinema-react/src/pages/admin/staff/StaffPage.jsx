@@ -1,4 +1,4 @@
-﻿import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
@@ -22,9 +22,9 @@ const errorMessage = (error, fallback) => {
 };
 
 const roleLabel = (role) => {
-  if (role === "ADMIN") return "Quáº£n trá»‹";
-  if (role === "STAFF") return "NhÃ¢n viÃªn";
-  return role || "â€”";
+  if (role === "ADMIN") return "Quản trị";
+  if (role === "STAFF") return "Nhân viên";
+  return role || "—";
 };
 
 function StaffPage() {
@@ -43,7 +43,7 @@ function StaffPage() {
       const response = await getUsers();
       setUsers(response.data || []);
     } catch (error) {
-      alert(errorMessage(error, "KhÃ´ng táº£i Ä‘Æ°á»£c danh sÃ¡ch nhÃ¢n viÃªn."));
+      alert(errorMessage(error, "Không tải được danh sách nhân viên."));
     } finally {
       setLoading(false);
     }
@@ -121,29 +121,29 @@ function StaffPage() {
       setSaving(true);
       if (editingUser) {
         await updateUser(editingUser.id, payloadFromForm());
-        alert("Cáº­p nháº­t tÃ i khoáº£n nhÃ¢n viÃªn thÃ nh cÃ´ng.");
+        alert("Cập nhật tài khoản nhân viên thành công.");
       } else {
         await createUser(payloadFromForm());
-        alert("ThÃªm tÃ i khoáº£n nhÃ¢n viÃªn thÃ nh cÃ´ng.");
+        alert("Thêm tài khoản nhân viên thành công.");
       }
 
       closeModal();
       await loadUsers();
     } catch (error) {
-      alert(errorMessage(error, "LÆ°u tÃ i khoáº£n nhÃ¢n viÃªn tháº¥t báº¡i."));
+      alert(errorMessage(error, "Lưu tài khoản nhân viên thất bại."));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (user) => {
-    if (!window.confirm(`XÃ³a tÃ i khoáº£n "${user.fullName}"?`)) return;
+    if (!window.confirm(`Xóa tài khoản "${user.fullName}"?`)) return;
     try {
       await deleteUser(user.id);
       setUsers((current) => current.filter((item) => item.id !== user.id));
-      alert("XÃ³a tÃ i khoáº£n nhÃ¢n viÃªn thÃ nh cÃ´ng.");
+      alert("Xóa tài khoản nhân viên thành công.");
     } catch (error) {
-      alert(errorMessage(error, "XÃ³a tÃ i khoáº£n nhÃ¢n viÃªn tháº¥t báº¡i."));
+      alert(errorMessage(error, "Xóa tài khoản nhân viên thất bại."));
     }
   };
 
@@ -152,27 +152,27 @@ function StaffPage() {
       <div className="staff-card">
         <header className="staff-header">
           <div>
-            <span className="page-label">CINEMA MANAGEMENT</span>
-            <h2>TÃ i khoáº£n nhÃ¢n viÃªn</h2>
-            <p>Quáº£n lÃ½ tÃ i khoáº£n admin, nhÃ¢n viÃªn ráº¡p vÃ  quyá»n truy cáº­p há»‡ thá»‘ng.</p>
+            <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
+            <h2>Tài khoản nhân viên</h2>
+            <p>Quản lý tài khoản admin, nhân viên rạp và quyền truy cập hệ thống.</p>
           </div>
           <button type="button" onClick={openCreate}>
             <AddRoundedIcon fontSize="small" />
-            ThÃªm nhÃ¢n viÃªn
+            Thêm nhân viên
           </button>
         </header>
 
         <div className="staff-summary">
           <div>
-            <span>Tá»•ng tÃ i khoáº£n</span>
+            <span>Tổng tài khoản</span>
             <strong>{summary.total}</strong>
           </div>
           <div>
-            <span>Quáº£n trá»‹</span>
+            <span>Quản trị</span>
             <strong>{summary.admins}</strong>
           </div>
           <div>
-            <span>NhÃ¢n viÃªn</span>
+            <span>Nhân viên</span>
             <strong>{summary.staff}</strong>
           </div>
         </div>
@@ -184,14 +184,14 @@ function StaffPage() {
               type="search"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder="TÃ¬m theo há» tÃªn, email, sá»‘ Ä‘iá»‡n thoáº¡i..."
+              placeholder="Tìm theo họ tên, email, số điện thoại..."
             />
           </label>
 
           <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
-            <option value="">Táº¥t cáº£ vai trÃ²</option>
-            <option value="ADMIN">Quáº£n trá»‹</option>
-            <option value="STAFF">NhÃ¢n viÃªn</option>
+            <option value="">Tất cả vai trò</option>
+            <option value="ADMIN">Quản trị</option>
+            <option value="STAFF">Nhân viên</option>
           </select>
         </div>
 
@@ -199,23 +199,23 @@ function StaffPage() {
           <table className="staff-table">
             <thead>
               <tr>
-                <th>Há» tÃªn</th>
+                <th>Họ tên</th>
                 <th>Email</th>
-                <th>Sá»‘ Ä‘iá»‡n thoáº¡i</th>
-                <th>Vai trÃ²</th>
-                <th>Quyá»n truy cáº­p</th>
-                <th>Tráº¡ng thÃ¡i</th>
-                <th>Thao tÃ¡c</th>
+                <th>Số điện thoại</th>
+                <th>Vai trò</th>
+                <th>Quyền truy cập</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="staff-empty">Äang táº£i dá»¯ liá»‡u...</td>
+                  <td colSpan="7" className="staff-empty">Đang tải dữ liệu...</td>
                 </tr>
               ) : filteredStaff.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="staff-empty">ChÆ°a cÃ³ tÃ i khoáº£n nhÃ¢n viÃªn phÃ¹ há»£p.</td>
+                  <td colSpan="7" className="staff-empty">Chưa có tài khoản nhân viên phù hợp.</td>
                 </tr>
               ) : (
                 filteredStaff.map((user) => (
@@ -229,7 +229,7 @@ function StaffPage() {
                       </div>
                     </td>
                     <td>{user.email}</td>
-                    <td>{user.phone || "â€”"}</td>
+                    <td>{user.phone || "—"}</td>
                     <td>
                       <span className={`staff-role ${user.role?.toLowerCase()}`}>
                         {roleLabel(user.role)}
@@ -237,18 +237,18 @@ function StaffPage() {
                     </td>
                     <td>
                       <button type="button" className="staff-permission" onClick={() => openEdit(user)}>
-                        Quyá»n truy cáº­p <EditOutlinedIcon fontSize="small" />
+                        Quyền truy cập <EditOutlinedIcon fontSize="small" />
                       </button>
                     </td>
                     <td>
-                      <span className="staff-status">ONLINE</span>
+                      <span className="staff-status">Đang hoạt động</span>
                     </td>
                     <td>
                       <div className="staff-actions">
-                        <button type="button" onClick={() => openEdit(user)} title="Sá»­a">
+                        <button type="button" onClick={() => openEdit(user)} title="Sửa">
                           <EditOutlinedIcon fontSize="small" />
                         </button>
-                        <button type="button" className="danger" onClick={() => handleDelete(user)} title="XÃ³a">
+                        <button type="button" className="danger" onClick={() => handleDelete(user)} title="Xóa">
                           <DeleteOutlineRoundedIcon fontSize="small" />
                         </button>
                       </div>
@@ -266,16 +266,16 @@ function StaffPage() {
           <div className="staff-modal" onMouseDown={(event) => event.stopPropagation()}>
             <div className="staff-modal-header">
               <div>
-                <h3>{editingUser ? "Sá»­a tÃ i khoáº£n nhÃ¢n viÃªn" : "ThÃªm tÃ i khoáº£n nhÃ¢n viÃªn"}</h3>
-                <p>Máº­t kháº©u máº·c Ä‘á»‹nh khi táº¡o má»›i lÃ  demo_password_change_me, cÃ³ thá»ƒ thay Ä‘á»•i trong form.</p>
+                <h3>{editingUser ? "Sửa tài khoản nhân viên" : "Thêm tài khoản nhân viên"}</h3>
+                <p>Mật khẩu mặc định khi tạo mới là demo_password_change_me, có thể thay đổi trong form.</p>
               </div>
-              <button type="button" onClick={closeModal} aria-label="ÄÃ³ng">Ã—</button>
+              <button type="button" onClick={closeModal} aria-label="Đóng">×</button>
             </div>
 
             <form onSubmit={handleSubmit}>
               <div className="staff-form-grid">
                 <label>
-                  <span>Há» tÃªn *</span>
+                  <span>Họ tên *</span>
                   <input name="fullName" value={form.fullName} onChange={handleChange} required />
                 </label>
                 <label>
@@ -283,33 +283,33 @@ function StaffPage() {
                   <input type="email" name="email" value={form.email} onChange={handleChange} required />
                 </label>
                 <label>
-                  <span>Sá»‘ Ä‘iá»‡n thoáº¡i</span>
+                  <span>Số điện thoại</span>
                   <input name="phone" value={form.phone} onChange={handleChange} />
                 </label>
                 <label>
-                  <span>Vai trÃ²</span>
+                  <span>Vai trò</span>
                   <select name="role" value={form.role} onChange={handleChange}>
-                    <option value="STAFF">NhÃ¢n viÃªn</option>
-                    <option value="ADMIN">Quáº£n trá»‹</option>
+                    <option value="STAFF">Nhân viên</option>
+                    <option value="ADMIN">Quản trị</option>
                   </select>
                 </label>
                 <label className="full">
-                  <span>{editingUser ? "Máº­t kháº©u má»›i" : "Máº­t kháº©u *"}</span>
+                  <span>{editingUser ? "Mật khẩu mới" : "Mật khẩu *"}</span>
                   <input
                     type="password"
                     name="password"
                     value={form.password}
                     onChange={handleChange}
                     required={!editingUser}
-                    placeholder={editingUser ? "Äá»ƒ trá»‘ng náº¿u khÃ´ng Ä‘á»•i máº­t kháº©u" : "demo_password_change_me"}
+                    placeholder={editingUser ? "Để trống nếu không đổi mật khẩu" : "demo_password_change_me"}
                   />
                 </label>
               </div>
 
               <div className="staff-modal-actions">
-                <button type="button" className="secondary" onClick={closeModal}>Há»§y</button>
+                <button type="button" className="secondary" onClick={closeModal}>Hủy</button>
                 <button type="submit" className="primary" disabled={saving}>
-                  {saving ? "Äang lÆ°u..." : "LÆ°u tÃ i khoáº£n"}
+                  {saving ? "Đang lưu..." : "Lưu tài khoản"}
                 </button>
               </div>
             </form>

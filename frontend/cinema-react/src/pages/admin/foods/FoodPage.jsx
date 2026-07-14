@@ -5,6 +5,7 @@ import RestaurantMenuOutlinedIcon from "@mui/icons-material/RestaurantMenuOutlin
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
 import { createFood, deleteFood, getFoods, updateFood, updateFoodStock, uploadFoodImage } from "../../../api/foodApi";
+import { foodCategoryLabel, foodSizeLabel, inventoryStatusLabel } from "../../../utils/displayLabels";
 import "../../../styles/food.css";
 
 const emptyForm = () => ({
@@ -212,7 +213,7 @@ function FoodPage() {
       <div className="food-card">
         <header className="food-header">
           <div>
-            <span className="page-label">CINEMA MANAGEMENT</span>
+            <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
             <h2>Thức ăn & Combo</h2>
             <p>Quản lý bắp nước, snack, combo bán kèm vé và tồn kho.</p>
           </div>
@@ -239,14 +240,14 @@ function FoodPage() {
             <option value="POPCORN">Bắp</option>
             <option value="DRINK">Nước</option>
             <option value="COMBO">Combo</option>
-            <option value="SNACK">Snack</option>
+            <option value="SNACK">Đồ ăn nhẹ</option>
             <option value="OTHER">Khác</option>
           </select>
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option value="">Tất cả trạng thái</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
-            <option value="OUT_OF_STOCK">OUT_OF_STOCK</option>
+            <option value="ACTIVE">Đang bán</option>
+            <option value="INACTIVE">Ngừng bán</option>
+            <option value="OUT_OF_STOCK">Hết hàng</option>
           </select>
         </div>
 
@@ -283,13 +284,13 @@ function FoodPage() {
                           </div>
                         </div>
                       </td>
-                      <td><strong>{food.category}</strong><span className="food-muted">Size {food.size || "NONE"}</span></td>
+                      <td><strong>{foodCategoryLabel(food.category)}</strong><span className="food-muted">Kích cỡ: {foodSizeLabel(food.size)}</span></td>
                       <td><strong>{money(food.price)}</strong><span className="food-muted">Giá vốn {food.costPrice ? money(food.costPrice) : "—"}</span></td>
                       <td>
                         <button type="button" className={`food-stock ${lowStock ? "low" : ""}`} onClick={() => quickUpdateStock(food)}>{food.stockQuantity}</button>
                         <span className="food-muted">Ngưỡng {food.lowStockThreshold}</span>
                       </td>
-                      <td><span className={`food-status ${food.status?.toLowerCase().replaceAll("_", "-")}`}>{food.status}</span></td>
+                      <td><span className={`food-status ${food.status?.toLowerCase().replaceAll("_", "-")}`}>{inventoryStatusLabel(food.status)}</span></td>
                       <td>{food.displayOrder}</td>
                       <td>
                         <div className="food-actions">
@@ -321,13 +322,13 @@ function FoodPage() {
                 <label><span>SKU *</span><input name="sku" value={form.sku} onChange={handleChange} required /></label>
                 <label><span>Tên món *</span><input name="name" value={form.name} onChange={handleChange} required /></label>
                 <label className="full"><span>Mô tả</span><textarea name="description" value={form.description} onChange={handleChange} rows="3" /></label>
-                <label><span>Loại</span><select name="category" value={form.category} onChange={handleChange}><option value="POPCORN">Bắp</option><option value="DRINK">Nước</option><option value="COMBO">Combo</option><option value="SNACK">Snack</option><option value="OTHER">Khác</option></select></label>
-                <label><span>Size</span><select name="size" value={form.size} onChange={handleChange}><option value="NONE">NONE</option><option value="S">S</option><option value="M">M</option><option value="L">L</option><option value="XL">XL</option></select></label>
+                <label><span>Loại</span><select name="category" value={form.category} onChange={handleChange}><option value="POPCORN">Bắp</option><option value="DRINK">Nước</option><option value="COMBO">Combo</option><option value="SNACK">Đồ ăn nhẹ</option><option value="OTHER">Khác</option></select></label>
+                <label><span>Kích cỡ</span><select name="size" value={form.size} onChange={handleChange}><option value="NONE">Không áp dụng</option><option value="S">S</option><option value="M">M</option><option value="L">L</option><option value="XL">XL</option></select></label>
                 <label><span>Giá bán *</span><input type="number" min="1" step="1000" name="price" value={form.price} onChange={handleChange} required /></label>
                 <label><span>Giá vốn</span><input type="number" min="0" step="1000" name="costPrice" value={form.costPrice} onChange={handleChange} /></label>
                 <label><span>Tồn kho</span><input type="number" min="0" name="stockQuantity" value={form.stockQuantity} onChange={handleChange} /></label>
                 <label><span>Ngưỡng cảnh báo</span><input type="number" min="0" name="lowStockThreshold" value={form.lowStockThreshold} onChange={handleChange} /></label>
-                <label><span>Trạng thái</span><select name="status" value={form.status} onChange={handleChange}><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option><option value="OUT_OF_STOCK">OUT_OF_STOCK</option></select></label>
+                <label><span>Trạng thái</span><select name="status" value={form.status} onChange={handleChange}><option value="ACTIVE">Đang bán</option><option value="INACTIVE">Ngừng bán</option><option value="OUT_OF_STOCK">Hết hàng</option></select></label>
                 <label><span>Thứ tự</span><input type="number" min="0" name="displayOrder" value={form.displayOrder} onChange={handleChange} /></label>
                 <label className="full"><span>URL ảnh</span><input name="imageUrl" value={form.imageUrl} onChange={handleChange} placeholder="https://..." /></label>
                 <div className="food-upload-field full">

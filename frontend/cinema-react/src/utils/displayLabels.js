@@ -82,3 +82,52 @@ export const seatTypeLabel = (value) =>
     },
     value,
   );
+
+export const inventoryStatusLabel = (value) =>
+  labelFrom(
+    {
+      ACTIVE: "Đang bán",
+      INACTIVE: "Ngừng bán",
+      OUT_OF_STOCK: "Hết hàng",
+    },
+    value,
+  );
+
+export const foodCategoryLabel = (value) =>
+  labelFrom(
+    {
+      POPCORN: "Bắp",
+      DRINK: "Nước",
+      COMBO: "Combo",
+      SNACK: "Đồ ăn nhẹ",
+      OTHER: "Khác",
+    },
+    value,
+  );
+
+export const foodSizeLabel = (value) =>
+  labelFrom({ NONE: "Không áp dụng", S: "S", M: "M", L: "L", XL: "XL" }, value);
+
+export const ticketStatusLabel = (value) =>
+  labelFrom(
+    {
+      VALID: "Hợp lệ",
+      USED: "Đã sử dụng",
+      CANCELLED: "Đã hủy",
+      EXPIRED: "Hết hạn",
+      UNKNOWN: "Không xác định",
+    },
+    value,
+  );
+
+export const bookingStatusLabel = (value) =>
+  labelFrom(
+    {
+      PENDING: "Chờ thanh toán",
+      PAID: "Đã thanh toán",
+      CANCELLED: "Đã hủy",
+      CANCELED: "Đã hủy",
+      EXPIRED: "Hết hạn",
+    },
+    value,
+  );
