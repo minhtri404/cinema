@@ -6,6 +6,8 @@ import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteMovie, getMovies } from "../../../api/movieApi";
+import { cleanupMediaByUrl } from "../../../api/mediaApi";
+import { movieStatusLabel } from "../../../utils/displayLabels";
 import "../../../styles/movie.css";
 
 function MovieListPage() {
@@ -22,7 +24,7 @@ function MovieListPage() {
   const getLoadErrorMessage = (err) => {
     return (
       err.response?.data?.message ||
-      "Khong tai duoc danh sach phim. Kiem tra movie-service va API gateway."
+      "Không tải được danh sách phim. Vui lòng kiểm tra các dịch vụ hệ thống."
     );
   };
 
@@ -40,11 +42,12 @@ function MovieListPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Ban co chac muon xoa phim nay?");
+  const handleDelete = async (movie) => {
+    const confirmDelete = window.confirm("Bạn có chắc muốn xóa phim này?");
     if (!confirmDelete) return;
 
-    await deleteMovie(id);
+    await deleteMovie(movie.id);
+    await cleanupMediaByUrl(movie.posterUrl);
     loadMovies();
   };
 
@@ -60,16 +63,29 @@ function MovieListPage() {
   }, [keyword, movies]);
 
   useEffect(() => {
-    loadMovies();
+    let active = true;
+    getMovies()
+      .then((response) => {
+        if (active) setMovies(normalizeMovies(response.data));
+      })
+      .catch((err) => {
+        if (active) setError(getLoadErrorMessage(err));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (
     <section className="movie-page">
       <div className="movie-header">
         <div>
-          <p className="movie-eyebrow">Cinema Management</p>
+          <p className="movie-eyebrow">QUẢN LÝ RẠP CHIẾU PHIM</p>
           <h1>Phim</h1>
-          <p>Quan ly danh sach phim dang co trong he thong.</p>
+          <p>Quản lý danh sách phim đang có trong hệ thống.</p>
         </div>
 
         <button
@@ -78,7 +94,7 @@ function MovieListPage() {
           type="button"
         >
           <AddRoundedIcon />
-          <span>Them phim</span>
+          <span>Thêm phim</span>
         </button>
       </div>
 
@@ -88,39 +104,39 @@ function MovieListPage() {
           <input
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Tim theo ten phim, the loai, dao dien..."
+            placeholder="Tìm theo tên phim, thể loại, đạo diễn..."
             type="search"
           />
         </label>
 
         <button className="movie-refresh-btn" onClick={loadMovies} type="button">
           <RefreshRoundedIcon />
-          <span>Tai lai</span>
+          <span>Tải lại</span>
         </button>
       </div>
 
       <div className="movie-card">
         {loading ? (
-          <p className="movie-empty">Dang tai du lieu...</p>
+          <p className="movie-empty">Đang tải dữ liệu...</p>
         ) : error ? (
           <div className="movie-error">
-            <strong>Khong hien thi duoc phim</strong>
+            <strong>Không hiển thị được phim</strong>
             <p>{error}</p>
           </div>
         ) : filteredMovies.length === 0 ? (
-          <p className="movie-empty">Chua co phim nao.</p>
+          <p className="movie-empty">Chưa có phim nào.</p>
         ) : (
           <div className="movie-table-wrapper">
             <table className="movie-table">
               <thead>
                 <tr>
                   <th>Phim</th>
-                  <th>The loai</th>
-                  <th>Dao dien</th>
-                  <th>Thoi luong</th>
-                  <th>Ngay phat hanh</th>
-                  <th>Trang thai</th>
-                  <th aria-label="Tac vu"></th>
+                  <th>Thể loại</th>
+                  <th>Đạo diễn</th>
+                  <th>Thời lượng</th>
+                  <th>Ngày phát hành</th>
+                  <th>Trạng thái</th>
+                  <th aria-label="Tác vụ"></th>
                 </tr>
               </thead>
 
@@ -133,30 +149,30 @@ function MovieListPage() {
                           <img
                             className="movie-poster"
                             src={movie.posterUrl}
-                            alt={movie.title || "Poster phim"}
+                            alt={movie.title || "Áp phích phim"}
                             onError={(event) => {
                               event.currentTarget.src =
-                                "https://placehold.co/120x160?text=No+Image";
+                                "https://placehold.co/120x160?text=Kh%C3%B4ng+c%C3%B3+%E1%BA%A3nh";
                             }}
                           />
                         ) : (
-                          <div className="movie-no-image">No image</div>
+                          <div className="movie-no-image">Không có ảnh</div>
                         )}
                         <div>
                           <div className="movie-title">
-                            {movie.title || "Chua co ten phim"}
+                            {movie.title || "Chưa có tên phim"}
                           </div>
-                          <p>{movie.description || "Chua co mo ta"}</p>
+                          <p>{movie.description || "Chưa có mô tả"}</p>
                         </div>
                       </div>
                     </td>
-                    <td>{movie.genre || "Chua co"}</td>
-                    <td>{movie.director || "Chua co"}</td>
-                    <td>{movie.duration ? `${movie.duration} phut` : "Chua co"}</td>
-                    <td>{movie.releaseDate || "Chua co"}</td>
+                    <td>{movie.genre || "Chưa có"}</td>
+                    <td>{movie.director || "Chưa có"}</td>
+                    <td>{movie.duration ? `${movie.duration} phút` : "Chưa có"}</td>
+                    <td>{movie.releaseDate || "Chưa có"}</td>
                     <td>
                       <span className="movie-status">
-                        {movie.status || "ACTIVE"}
+                        {movieStatusLabel(movie.status || "NOW_SHOWING")}
                       </span>
                     </td>
                     <td>
@@ -165,15 +181,15 @@ function MovieListPage() {
                           className="icon-btn"
                           onClick={() => navigate(`/admin/movies/edit/${movie.id}`)}
                           type="button"
-                          aria-label="Sua phim"
+                          aria-label="Sửa phim"
                         >
                           <EditOutlinedIcon />
                         </button>
                         <button
                           className="icon-btn danger"
-                          onClick={() => handleDelete(movie.id)}
+                          onClick={() => handleDelete(movie)}
                           type="button"
-                          aria-label="Xoa phim"
+                          aria-label="Xóa phim"
                         >
                           <DeleteOutlineOutlinedIcon />
                         </button>

@@ -405,11 +405,11 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO bookings (user_id, showtime_id, total_amount, status, created_at)
 SELECT v.user_id, v.showtime_id, v.total_amount, v.status, v.created_at
 FROM (
-    SELECT 2 user_id, 1 showtime_id, 180000 total_amount, 'ĐÃ_XÁC_NHẬN' status, DATE_SUB(NOW(), INTERVAL 2 DAY) created_at
+    SELECT 2 user_id, 1 showtime_id, 180000 total_amount, 'PAID' status, DATE_SUB(NOW(), INTERVAL 2 DAY) created_at
     UNION ALL
-    SELECT 3, 2, 210000, 'ĐÃ_THANH_TOÁN', DATE_SUB(NOW(), INTERVAL 1 DAY)
+    SELECT 3, 2, 210000, 'PAID', DATE_SUB(NOW(), INTERVAL 1 DAY)
     UNION ALL
-    SELECT 2, 3, 320000, 'CHỜ_THANH_TOÁN', NOW()
+    SELECT 2, 3, 320000, 'PENDING', NOW()
 ) v
 WHERE NOT EXISTS (
     SELECT 1 FROM bookings b
@@ -420,9 +420,10 @@ WHERE NOT EXISTS (
 
 UPDATE bookings
 SET status = CASE status
-        WHEN 'CONFIRMED' THEN 'ĐÃ_XÁC_NHẬN'
-        WHEN 'PAID' THEN 'ĐÃ_THANH_TOÁN'
-        WHEN 'PENDING' THEN 'CHỜ_THANH_TOÁN'
+        WHEN 'CONFIRMED' THEN 'PAID'
+        WHEN 'ĐÃ_XÁC_NHẬN' THEN 'PAID'
+        WHEN 'ĐÃ_THANH_TOÁN' THEN 'PAID'
+        WHEN 'CHỜ_THANH_TOÁN' THEN 'PENDING'
         ELSE status
     END;
 

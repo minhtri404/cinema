@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import MeetingRoomOutlinedIcon from "@mui/icons-material/MeetingRoomOutlined";
 import EventSeatOutlinedIcon from "@mui/icons-material/EventSeatOutlined";
@@ -12,6 +12,7 @@ import {
 } from "../../../api/roomApi";
 import { getTheaters } from "../../../api/theaterApi";
 import "../../../styles/room.css";
+import { activityStatusLabel } from "../../../utils/displayLabels";
 
 const emptyForm = {
   theaterId: "",
@@ -55,13 +56,29 @@ function RoomListPage() {
   };
 
   useEffect(() => {
-    loadData();
+    let active = true;
+    Promise.all([getRooms(), getTheaters()])
+      .then(([roomRes, theaterRes]) => {
+        if (!active) return;
+        setRooms(roomRes.data || []);
+        setTheaters(theaterRes.data || []);
+      })
+      .catch((error) => {
+        console.error("Lỗi tải phòng chiếu:", error);
+        if (active) alert("Không tải được danh sách phòng chiếu.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const getTheaterName = (theaterId) => {
+  const getTheaterName = useCallback((theaterId) => {
     const theater = theaters.find((item) => Number(item.id) === Number(theaterId));
     return theater ? theater.name : "Chưa rõ rạp";
-  };
+  }, [theaters]);
 
   const filteredRooms = useMemo(() => {
     const value = keyword.toLowerCase().trim();
@@ -78,7 +95,7 @@ function RoomListPage() {
 
       return matchKeyword && matchTheater;
     });
-  }, [rooms, keyword, selectedTheater, theaters]);
+  }, [rooms, keyword, selectedTheater, getTheaterName]);
 
   const openCreateModal = () => {
     setEditingRoom(null);
@@ -193,7 +210,7 @@ function RoomListPage() {
         <div className="room-card">
           <div className="room-header">
             <div>
-              <span className="page-label">CINEMA MANAGEMENT</span>
+              <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
               <h2>Phòng chiếu</h2>
               <p>Quản lý phòng chiếu theo từng rạp và tạo sơ đồ ghế.</p>
             </div>
@@ -228,10 +245,11 @@ function RoomListPage() {
           {loading ? (
             <div className="room-empty">Đang tải dữ liệu...</div>
           ) : (
-            <table className="room-table">
+            <div className="room-table-wrap">
+              <table className="room-table">
               <thead>
                 <tr>
-                  <th style={{ width: "80px" }}>ID</th>
+                  <th style={{ width: "80px" }}>Mã</th>
                   <th>Phòng</th>
                   <th>Rạp</th>
                   <th style={{ width: "120px" }}>Loại</th>
@@ -282,7 +300,7 @@ function RoomListPage() {
                             room.status === "ACTIVE" ? "active" : "inactive"
                           }`}
                         >
-                          {room.status || "ACTIVE"}
+                          {activityStatusLabel(room.status || "ACTIVE")}
                         </span>
                       </td>
 
@@ -313,7 +331,8 @@ function RoomListPage() {
                   </tr>
                 )}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
         </div>
       </section>
@@ -409,8 +428,8 @@ function RoomListPage() {
                       value={form.status}
                       onChange={handleChange}
                     >
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="INACTIVE">INACTIVE</option>
+                      <option value="ACTIVE">Đang hoạt động</option>
+                      <option value="INACTIVE">Ngừng hoạt động</option>
                     </select>
                   </div>
                 </div>

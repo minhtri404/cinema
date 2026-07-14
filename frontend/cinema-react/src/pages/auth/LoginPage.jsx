@@ -20,7 +20,7 @@ function LoginPage() {
       localStorage.setItem("auth", JSON.stringify(response.data));
       navigate("/admin");
     } catch (err) {
-      setError(err.response?.data?.message || "Dang nhap that bai");
+      setError(err.response?.data?.message || "Đăng nhập thất bại");
     } finally {
       setLoading(false);
     }
@@ -34,7 +34,7 @@ function LoginPage() {
             <TheatersRoundedIcon />
           </span>
           <div>
-            <h1>Cinema </h1>
+            <h1>Rạp chiếu phim</h1>
     
           </div>
         </div>
@@ -42,7 +42,7 @@ function LoginPage() {
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="login-label" htmlFor="email">
-              Tai khoan
+              Tài khoản
             </label>
             <input
               id="email"
@@ -58,10 +58,10 @@ function LoginPage() {
           <div className="mb-4">
             <div className="d-flex align-items-center justify-content-between">
               <label className="login-label" htmlFor="password">
-                Mat khau
+                Mật khẩu
               </label>
               <button className="forgot-link" type="button">
-                Quen mat khau?
+                Quên mật khẩu?
               </button>
             </div>
             <input
@@ -78,11 +78,11 @@ function LoginPage() {
           {error && <div className="login-error">{error}</div>}
 
           <button className="login-button" type="submit" disabled={loading}>
-            {loading ? "Dang dang nhap..." : "Dang nhap"}
+            {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
 
           <p className="register-text">
-            Chua co tai khoan? <button type="button">Dang ky ngay</button>
+            Chưa có tài khoản? <button type="button">Đăng ký ngay</button>
           </p>
         </form>
       </section>

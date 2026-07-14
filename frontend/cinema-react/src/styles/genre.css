@@ -62,8 +62,14 @@
   box-shadow: 0 0 0 3px rgba(90, 115, 232, 0.12);
 }
 
+.genre-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .genre-table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
 }
 
@@ -92,10 +98,12 @@
 }
 
 .genre-status {
+  display: inline-flex;
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .genre-status.active {

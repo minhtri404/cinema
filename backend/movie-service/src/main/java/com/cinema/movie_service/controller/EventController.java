@@ -8,12 +8,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/events")
 @RequiredArgsConstructor
 @CrossOrigin("*")
 public class EventController {
+
+    private static final Set<String> EVENT_CHANNELS = Set.of("ONLINE", "OFFLINE");
 
     private final EventRepository eventRepository;
 
@@ -78,6 +81,12 @@ public class EventController {
         }
         if (event.getEndDate().isBefore(event.getStartDate())) {
             return ResponseEntity.badRequest().body("Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.");
+        }
+
+        String status = defaultText(event.getStatus(), "ONLINE").toUpperCase();
+        if (!EVENT_CHANNELS.contains(status)) {
+            return ResponseEntity.badRequest()
+                    .body("Trạng thái sự kiện chỉ được là ONLINE hoặc OFFLINE.");
         }
 
         boolean duplicate = id == null

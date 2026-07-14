@@ -144,13 +144,22 @@
   color: #0f2f4a;
 }
 
-.showtime-date div,
-.showtime-table td:nth-child(2),
-.showtime-table td:nth-child(3),
-.showtime-table td:nth-child(4) {
+.showtime-date > div {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.showtime-table td:nth-child(2) > *,
+.showtime-table td:nth-child(3) > *,
+.showtime-table td:nth-child(4) > * {
+  display: block;
+}
+
+.showtime-table td:nth-child(2) > * + *,
+.showtime-table td:nth-child(3) > * + *,
+.showtime-table td:nth-child(4) > * + * {
+  margin-top: 4px;
 }
 
 .showtime-movie {

@@ -83,9 +83,9 @@ END;
 
 UPDATE booking_db.bookings
 SET status = CASE id
-    WHEN 1 THEN 'ĐÃ_XÁC_NHẬN'
-    WHEN 2 THEN 'ĐÃ_THANH_TOÁN'
-    WHEN 3 THEN 'CHỜ_THANH_TOÁN'
+    WHEN 1 THEN 'PAID'
+    WHEN 2 THEN 'PAID'
+    WHEN 3 THEN 'PENDING'
     ELSE status
 END
 WHERE id BETWEEN 1 AND 3;

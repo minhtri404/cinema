@@ -13,6 +13,7 @@ import { getMovies } from "../../../api/movieApi";
 import { getRooms } from "../../../api/roomApi";
 import { getTheaters } from "../../../api/theaterApi";
 import "../../../styles/showtime.css";
+import { showtimeStatusLabel } from "../../../utils/displayLabels";
 
 const localDateValue = () => {
   const now = new Date();
@@ -280,7 +281,7 @@ function ShowtimePage() {
         <div className="showtime-card">
           <div className="showtime-header">
             <div>
-              <span className="page-label">CINEMA MANAGEMENT</span>
+              <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
               <h2>Lịch chiếu</h2>
               <p>Quản lý phim, phòng, khung giờ và giá vé theo từng rạp.</p>
             </div>
@@ -393,7 +394,7 @@ function ShowtimePage() {
                       </td>
                       <td>
                         <span className={`showtime-status ${showtime.status?.toLowerCase()}`}>
-                          {showtime.status}
+                          {showtimeStatusLabel(showtime.status)}
                         </span>
                       </td>
                       <td>
@@ -548,10 +549,10 @@ function ShowtimePage() {
                 <label>
                   <span>Trạng thái</span>
                   <select name="status" value={form.status} onChange={handleChange}>
-                    <option value="ONLINE">ONLINE</option>
-                    <option value="SOLD_OUT">SOLD OUT</option>
-                    <option value="CANCELLED">CANCELLED</option>
-                    <option value="OFFLINE">OFFLINE</option>
+                    <option value="ONLINE">Đang mở bán</option>
+                    <option value="SOLD_OUT">Hết vé</option>
+                    <option value="CANCELLED">Đã hủy</option>
+                    <option value="OFFLINE">Tạm ngừng</option>
                   </select>
                 </label>
               </div>

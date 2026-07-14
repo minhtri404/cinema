@@ -14,3 +14,5 @@ Thumbs.db
 backend/movie-service/uploads/events/*
 backend/movie-service/uploads/news/*
 backend/movie-service/uploads/promotions/*
+backend/movie-service/uploads/movies/*
+backend/media-service/uploads/

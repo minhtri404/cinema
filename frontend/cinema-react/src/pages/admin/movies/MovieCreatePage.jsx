@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import AdminLayout from "../../../layouts/admin/AdminLayout";
 import { getGenres } from "../../../api/genreApi";
 import { createMovie, uploadMoviePoster } from "../../../api/movieApi";
+import { cleanupMediaByUrl } from "../../../api/mediaApi";
 import { getYouTubeEmbedUrl } from "../../../utils/youtube";
 import "../../../styles/movie.css";
 
@@ -41,7 +42,7 @@ function MovieCreatePage() {
         setGenres(activeGenres);
       })
       .catch((error) => {
-        console.error("Khong tai duoc the loai:", error);
+        console.error("Không tải được thể loại:", error);
       });
 
     return () => {
@@ -70,8 +71,8 @@ function MovieCreatePage() {
       return;
     }
 
-    if (file.size > 3 * 1024 * 1024) {
-      alert("Ảnh không được vượt quá 3MB.");
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Ảnh không được vượt quá 5MB.");
       return;
     }
 
@@ -81,6 +82,7 @@ function MovieCreatePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    let uploadedPosterUrl = "";
 
     try {
       setSaving(true);
@@ -91,6 +93,7 @@ function MovieCreatePage() {
         setUploading(true);
         const uploadRes = await uploadMoviePoster(posterFile);
         finalPosterUrl = uploadRes.url || uploadRes.data?.url;
+        uploadedPosterUrl = finalPosterUrl;
         setUploading(false);
       }
 
@@ -102,8 +105,9 @@ function MovieCreatePage() {
 
       navigate("/admin/movies");
     } catch (error) {
+      if (uploadedPosterUrl) await cleanupMediaByUrl(uploadedPosterUrl);
       console.error("Lỗi thêm phim:", error);
-      alert("Thêm phim thất bại. Kiểm tra backend hoặc dữ liệu nhập.");
+      alert("Thêm phim thất bại. Vui lòng kiểm tra dữ liệu đã nhập.");
     } finally {
       setSaving(false);
       setUploading(false);
@@ -116,9 +120,9 @@ function MovieCreatePage() {
         <div className="movie-card">
           <div className="movie-header">
             <div>
-              <span className="page-label">CINEMA MANAGEMENT</span>
+              <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
               <h2>Thêm phim</h2>
-              <p>Nhập thông tin phim mới và chọn ảnh poster từ máy.</p>
+              <p>Nhập thông tin phim mới và chọn ảnh áp phích từ máy.</p>
             </div>
 
             <Link to="/admin/movies" className="movie-back-btn">
@@ -197,36 +201,36 @@ function MovieCreatePage() {
                     value={form.status}
                     onChange={handleChange}
                   >
-                    <option value="NOW_SHOWING">NOW_SHOWING</option>
-                    <option value="COMING_SOON">COMING_SOON</option>
-                    <option value="STOPPED">STOPPED</option>
+                    <option value="NOW_SHOWING">Đang chiếu</option>
+                    <option value="COMING_SOON">Sắp chiếu</option>
+                    <option value="STOPPED">Ngừng chiếu</option>
                   </select>
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Poster URL</label>
+                <label>Đường dẫn ảnh áp phích</label>
                 <input
                   name="posterUrl"
                   value={form.posterUrl}
                   onChange={handleChange}
-                  placeholder="Có thể dán link ảnh nếu không upload file"
+                  placeholder="Có thể dán đường dẫn ảnh nếu không tải tệp lên"
                 />
               </div>
 
               <div className="form-group">
-                <label>Trailer YouTube</label>
+                <label>Đoạn giới thiệu trên YouTube</label>
                 <input
                   name="trailerUrl"
                   value={form.trailerUrl}
                   onChange={handleChange}
-                  placeholder="Dan link YouTube hoac ID video, vi du CFWw9ubDgKI"
+                  placeholder="Dán đường dẫn YouTube hoặc mã video, ví dụ CFWw9ubDgKI"
                 />
                 {trailerEmbedUrl && (
                   <div className="trailer-preview">
                     <iframe
                       src={trailerEmbedUrl}
-                      title="Trailer preview"
+                      title="Xem trước đoạn giới thiệu"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       allowFullScreen
                     />
@@ -257,19 +261,19 @@ function MovieCreatePage() {
             </div>
 
             <div className="movie-poster-panel">
-              <h5>Poster phim</h5>
+              <h5>Áp phích phim</h5>
               <p>Chọn ảnh từ máy để xem trước và tải lên hệ thống.</p>
 
               <label className="poster-upload-box">
                 {previewUrl ? (
-                  <img src={previewUrl} alt="Poster preview" />
+                  <img src={previewUrl} alt="Xem trước áp phích" />
                 ) : form.posterUrl ? (
-                  <img src={form.posterUrl} alt="Poster preview" />
+                  <img src={form.posterUrl} alt="Xem trước áp phích" />
                 ) : (
                   <div className="poster-placeholder">
                     <span>+</span>
-                    <strong>Chọn ảnh poster</strong>
-                    <small>JPG, PNG, WEBP - tối đa 3MB</small>
+                    <strong>Chọn ảnh áp phích</strong>
+                    <small>JPG, PNG, WEBP - tối đa 5MB</small>
                   </div>
                 )}
 

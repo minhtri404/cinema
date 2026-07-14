@@ -11,7 +11,9 @@ import {
   updatePromotion,
   uploadPromotionImage,
 } from "../../../api/promotionApi";
+import { cleanupMediaByUrl } from "../../../api/mediaApi";
 import "../../../styles/promotion.css";
+import { promotionStatusLabel } from "../../../utils/displayLabels";
 
 const localDate = () => {
   const now = new Date();
@@ -186,12 +188,16 @@ function PromotionPage() {
       return;
     }
 
+    const previousImageUrl = editingPromotion?.imageUrl || "";
+    let uploadedImageUrl = "";
+
     try {
       setSaving(true);
       let imageUrl = form.imageUrl;
       if (imageFile) {
         const uploadResponse = await uploadPromotionImage(imageFile);
         imageUrl = uploadResponse.data?.url || "";
+        uploadedImageUrl = imageUrl;
       }
 
       const payload = {
@@ -208,6 +214,9 @@ function PromotionPage() {
 
       if (editingPromotion) {
         await updatePromotion(editingPromotion.id, payload);
+        if (previousImageUrl && previousImageUrl !== imageUrl) {
+          await cleanupMediaByUrl(previousImageUrl);
+        }
         alert("Cập nhật khuyến mãi thành công.");
       } else {
         await createPromotion(payload);
@@ -219,6 +228,7 @@ function PromotionPage() {
       setEditingPromotion(null);
       await loadPromotions();
     } catch (error) {
+      if (uploadedImageUrl) await cleanupMediaByUrl(uploadedImageUrl);
       console.error("Lỗi lưu khuyến mãi:", error);
       alert(errorMessage(error, "Lưu khuyến mãi thất bại."));
     } finally {
@@ -230,6 +240,7 @@ function PromotionPage() {
     if (!window.confirm(`Xóa mã khuyến mãi "${promotion.code}"?`)) return;
     try {
       await deletePromotion(promotion.id);
+      await cleanupMediaByUrl(promotion.imageUrl);
       setPromotions((current) =>
         current.filter((item) => item.id !== promotion.id),
       );
@@ -250,7 +261,7 @@ function PromotionPage() {
         <div className="promotion-card">
           <header className="promotion-header">
             <div>
-              <span className="page-label">CINEMA MANAGEMENT</span>
+              <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
               <h2>Khuyến mãi</h2>
               <p>Quản lý mã giảm giá và điều kiện áp dụng khi đặt vé.</p>
             </div>
@@ -275,9 +286,9 @@ function PromotionPage() {
               onChange={(event) => setStatusFilter(event.target.value)}
             >
               <option value="">Tất cả trạng thái</option>
-              <option value="ONLINE">ONLINE</option>
-              <option value="OFFLINE">OFFLINE</option>
-              <option value="EXPIRED">EXPIRED</option>
+              <option value="ONLINE">Đang áp dụng</option>
+              <option value="OFFLINE">Tạm ngừng</option>
+              <option value="EXPIRED">Hết hạn</option>
             </select>
           </div>
 
@@ -339,7 +350,7 @@ function PromotionPage() {
                       </td>
                       <td>
                         <span className={`promotion-status ${promotion.status?.toLowerCase()}`}>
-                          {promotion.status}
+                          {promotionStatusLabel(promotion.status)}
                         </span>
                       </td>
                       <td>
@@ -499,15 +510,15 @@ function PromotionPage() {
                 <label>
                   <span>Trạng thái</span>
                   <select name="status" value={form.status} onChange={handleChange}>
-                    <option value="ONLINE">ONLINE</option>
-                    <option value="OFFLINE">OFFLINE</option>
-                    <option value="EXPIRED">EXPIRED</option>
+                    <option value="ONLINE">Đang áp dụng</option>
+                    <option value="OFFLINE">Tạm ngừng</option>
+                    <option value="EXPIRED">Hết hạn</option>
                   </select>
                 </label>
 
                 <div className="promotion-image-field full">
                   <div>
-                    <span>Ảnh banner</span>
+                    <span>Ảnh bìa</span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
@@ -517,7 +528,7 @@ function PromotionPage() {
                       name="imageUrl"
                       value={form.imageUrl}
                       onChange={handleChange}
-                      placeholder="Hoặc dán URL ảnh"
+                      placeholder="Hoặc dán đường dẫn ảnh"
                     />
                   </div>
                   {previewUrl ? (

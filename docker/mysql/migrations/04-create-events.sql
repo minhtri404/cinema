@@ -17,23 +17,23 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 INSERT INTO events
-(title, image_url, content, apply_condition, start_date, end_date, status, staff_name)
+(title, image_url, content, apply_condition, start_date, end_date, status, staff_name, created_at)
 VALUES
 ('Happy Day - Thứ Ba vui vẻ',
  '/uploads/events/c9365f24-8add-4d70-b69a-2a645261f68c.png',
  'Vào thứ Ba hàng tuần, khách hàng được mua vé với mức giá ưu đãi.',
  'Áp dụng mỗi thứ Ba tại tất cả cụm rạp.',
- CURDATE(), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'ONLINE', 'Admin Cinema'),
+ CURDATE(), DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'ONLINE', 'Admin Cinema', NOW()),
 ('Ưu đãi thành viên Cinema',
  '/uploads/events/3a8e32db-b71f-450a-a7ef-52e514f8a3f4.png',
  'Tặng ưu đãi đặc biệt dành cho khách hàng thành viên.',
  'Áp dụng cho tài khoản thành viên hợp lệ.',
- CURDATE(), DATE_ADD(CURDATE(), INTERVAL 180 DAY), 'ONLINE', 'Admin Cinema'),
+ CURDATE(), DATE_ADD(CURDATE(), INTERVAL 180 DAY), 'ONLINE', 'Admin Cinema', NOW()),
 ('Giảm 10% khi thanh toán online',
  '/uploads/events/cc5f0a52-39f5-48c2-bf46-2fd3c2a4995a.png',
  'Khách hàng được giảm 10% khi thanh toán bằng ngân hàng liên kết.',
  'Áp dụng cho giao dịch online đủ điều kiện.',
- CURDATE(), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'ONLINE', 'Admin Cinema')
+ CURDATE(), DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'ONLINE', 'Admin Cinema', NOW())
 ON DUPLICATE KEY UPDATE
     image_url = VALUES(image_url),
     content = VALUES(content),

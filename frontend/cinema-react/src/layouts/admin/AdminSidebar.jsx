@@ -14,7 +14,7 @@ import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import { NavLink } from "react-router-dom";
 
 const menuItems = [
-  { label: "Dashboard", path: "/admin", Icon: DashboardRoundedIcon },
+  { label: "Tổng quan", path: "/admin", Icon: DashboardRoundedIcon },
   { label: "Phim", path: "/admin/movies", Icon: MovieRoundedIcon },
   { label: "Thể loại", path: "/admin/genres", Icon: CategoryOutlinedIcon },
   { label: "Rạp", path: "/admin/theaters", Icon: StorefrontOutlinedIcon },
@@ -25,11 +25,14 @@ const menuItems = [
   { label: "Khuyến mãi", path: "/admin/promotions", Icon: LocalOfferOutlinedIcon },
   { label: "Vé", path: "/admin/bookings", Icon: ConfirmationNumberRoundedIcon },
   { label: "Giá vé", path: "/admin/ticket-pricing", Icon: PaidOutlinedIcon },
-  { label: "Người dùng", path: "/admin/users", Icon: GroupRoundedIcon },
+  { label: "Người dùng", path: "/admin/users", Icon: GroupRoundedIcon, adminOnly: true },
 
 ];
 
 function Sidebar() {
+  const auth = JSON.parse(localStorage.getItem("auth") || "{}");
+  const role = String(auth.role || "").toUpperCase();
+
   return (
     <aside className="admin-sidebar">
       <div className="sidebar-brand">
@@ -37,26 +40,29 @@ function Sidebar() {
           <TheatersRoundedIcon />
         </div>
 
-        <div>
-          <span>Admin Cinema</span>
-          <p>Management</p>
+        <div className="brand-copy">
+          <span>Quản trị rạp</span>
+          <p>Hệ thống quản lý</p>
         </div>
       </div>
 
       <div className="sidebar-divider" />
 
-      <nav className="sidebar-menu" aria-label="Admin navigation">
-        {menuItems.map(({ label, path, Icon }) => (
+      <nav className="sidebar-menu" aria-label="Điều hướng quản trị">
+        {menuItems
+          .filter((item) => !item.adminOnly || role === "ADMIN")
+          .map(({ label, path, Icon }) => (
           <NavLink
             key={path}
             to={path}
             end={path === "/admin"}
+            title={label}
             className={({ isActive }) => (isActive ? "active" : undefined)}
           >
             <Icon className="menu-icon" />
             <span>{label}</span>
           </NavLink>
-        ))}
+          ))}
       </nav>
     </aside>
   );

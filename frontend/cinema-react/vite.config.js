@@ -5,12 +5,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/api/uploads": {
+      "/uploads": {
         target: "http://localhost:18081",
         changeOrigin: true,
       },
-      "/uploads": {
-        target: "http://localhost:18081",
+      "/media": {
+        target: "http://localhost:18080",
         changeOrigin: true,
       },
       "/api": {

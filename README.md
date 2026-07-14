@@ -13,7 +13,7 @@ He thong quan ly rap phim gom frontend React va backend Spring Boot microservice
 - Them bang `theaters` va API `/api/theaters`.
 - Cap nhat API Gateway route cho `/api/movies/**`, `/api/genres/**`, `/api/showtimes/**`, `/api/theaters/**`, `/api/bookings/**`, `/api/auth/**`, `/api/users/**`.
 - Cap nhat seed SQL co phim mau, 10 the loai, 7 rap mau va tai khoan admin.
-- Them proxy Vite cho `/api` va `/api/uploads`.
+- Them proxy Vite cho `/api`, `/media` va `/uploads` cu.
 
 ## Yeu cau
 
@@ -40,6 +40,9 @@ Docker se chay:
 - Showtime Service: `http://localhost:8082`
 - Booking Service: `http://localhost:8083`
 - User Service: `http://localhost:8084`
+- Payment Service: `http://localhost:8085`
+- Notification Service: `http://localhost:8086`
+- Media Service: `http://localhost:8087`
 
 ## Chay frontend
 
@@ -74,6 +77,17 @@ Password: 123456
 - Rap: `GET/POST http://localhost:8080/api/theaters`
 - Dat ve: `GET/POST http://localhost:8080/api/bookings`
 - Nguoi dung: `GET http://localhost:8080/api/users`
+- Giao dich thanh toan: `GET/POST http://localhost:8080/api/payments`
+- Thong bao: `GET/POST http://localhost:8080/api/notifications`
+- Anh quan ly: `GET http://localhost:8080/api/media`, `POST http://localhost:8080/api/media/images`
+
+## Cac service nen tang moi
+
+- `payment-service` dung `payment_db.payment_transactions`, ho tro tao giao dich, callback va hoan tien nen tang.
+- `notification-service` dung `notification_db.notifications`, ho tro thong bao trong ung dung, email va SMS o muc du lieu/trang thai.
+- `media-service` dung `media_db.media_assets`, chi nhan anh JPG, PNG, WEBP toi da 5 MB va phuc vu anh qua `/media/files/{id}`.
+
+Ba service da dang ky Eureka va duoc API Gateway chuyen tiep. Trailer phim tiep tuc luu bang URL YouTube trong `movie-service`; `media-service` khong tai hoac luu video. Tich hop VNPay, MoMo, SMTP, SMS va object storage cho anh se duoc cau hinh them theo moi truong trien khai.
 
 Co the goi truc tiep service khi can debug:
 

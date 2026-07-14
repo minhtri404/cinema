@@ -25,7 +25,21 @@ function GenreListPage() {
   };
 
   useEffect(() => {
-    loadGenres();
+    let active = true;
+    getGenres()
+      .then((res) => {
+        if (active) setGenres(res.data || []);
+      })
+      .catch((error) => {
+        console.error("Lỗi tải thể loại:", error);
+        if (active) alert("Không tải được danh sách thể loại.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const filteredGenres = useMemo(() => {
@@ -62,7 +76,7 @@ function GenreListPage() {
         <div className="genre-card">
           <div className="genre-header">
             <div>
-              <span className="page-label">CINEMA MANAGEMENT</span>
+              <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
               <h2>Thể loại phim</h2>
               <p>Quản lý danh sách thể loại dùng cho phim trong hệ thống.</p>
             </div>
@@ -84,10 +98,11 @@ function GenreListPage() {
           {loading ? (
             <div className="genre-empty">Đang tải dữ liệu...</div>
           ) : (
-            <table className="genre-table">
+            <div className="genre-table-wrap">
+              <table className="genre-table">
               <thead>
                 <tr>
-                  <th style={{ width: "80px" }}>ID</th>
+                  <th style={{ width: "80px" }}>Mã</th>
                   <th>Tên thể loại</th>
                   <th>Mô tả</th>
                   <th style={{ width: "140px" }}>Trạng thái</th>
@@ -144,7 +159,8 @@ function GenreListPage() {
                   </tr>
                 )}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
         </div>
       </section>

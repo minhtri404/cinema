@@ -82,6 +82,7 @@
 }
 
 .seat-generate-form input,
+.seat-generate-form select,
 .seat-detail-panel input,
 .seat-detail-panel select {
   height: 40px;
@@ -93,6 +94,11 @@
 
 .seat-generate-form input {
   width: 86px;
+}
+
+.seat-generate-form .seat-showtime-select select {
+  width: 260px;
+  max-width: 38vw;
 }
 
 .seat-legend {
@@ -203,6 +209,32 @@
   color: #6b7280;
 }
 
+.seat-cell.booked,
+.seat-legend .booked {
+  border-color: #ef4444;
+  background: #ef4444;
+  color: #fff;
+}
+
+.seat-cell.booked:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.seat-cell.booked {
+  cursor: pointer;
+}
+
+.seat-cell.booked.related {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.5);
+  transform: translateY(-2px);
+}
+
+.seat-cell.booked.related.selected {
+  outline-color: #7c3aed;
+}
+
 .seat-cell.selected {
   outline: 3px solid #2563eb;
   outline-offset: 2px;
@@ -231,6 +263,104 @@
   font-size: 24px;
   font-weight: 800;
   margin-bottom: 16px;
+}
+
+.seat-detail-code.booked {
+  background: #dc2626;
+}
+
+.seat-booking-badge {
+  display: inline-flex;
+  margin-bottom: 14px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.seat-booking-detail dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.seat-booking-detail dl > div {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.seat-booking-detail dt {
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.seat-booking-detail dd {
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: #172033;
+  font-weight: 700;
+}
+
+.seat-related-bookings {
+  margin-top: 16px;
+  padding: 13px;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  background: #fffbeb;
+}
+
+.seat-related-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.seat-related-heading strong {
+  color: #78350f;
+  font-size: 13px;
+}
+
+.seat-related-heading span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.seat-related-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.seat-related-list button {
+  min-width: 36px;
+  padding: 6px 9px;
+  border: 1px solid #f59e0b;
+  border-radius: 7px;
+  background: #fff;
+  color: #92400e;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.seat-related-list button.active {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.seat-related-bookings > small {
+  display: block;
+  margin-top: 9px;
+  color: #a16207;
+  line-height: 1.35;
 }
 
 .seat-detail-panel label {

@@ -23,7 +23,7 @@ const surchargeLabels = {
   ROOM_4DX: "4DX",
   ROOM_IMAX: "IMAX",
   SEAT_VIP: "Ghế VIP",
-  SEAT_COUPLE: "Ghế Couple",
+  SEAT_COUPLE: "Ghế đôi",
 };
 
 function TicketPricingPage() {
@@ -52,7 +52,23 @@ function TicketPricingPage() {
   };
 
   useEffect(() => {
-    loadData();
+    let active = true;
+    Promise.all([getTicketPricing(), getTicketSurcharges()])
+      .then(([pricingRes, surchargeRes]) => {
+        if (!active) return;
+        setPricingList(pricingRes.data || []);
+        setSurcharges(surchargeRes.data || []);
+      })
+      .catch((error) => {
+        console.error("Lỗi tải giá vé:", error);
+        if (active) alert("Không tải được dữ liệu giá vé.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handlePricingChange = (id, field, value) => {
@@ -94,7 +110,7 @@ function TicketPricingPage() {
       loadData();
     } catch (error) {
       console.error("Lỗi lưu giá vé:", error);
-      alert("Lưu giá vé thất bại. Kiểm tra booking-service.");
+      alert("Lưu giá vé thất bại. Vui lòng kiểm tra dịch vụ đặt vé.");
     } finally {
       setSaving(false);
     }
@@ -120,7 +136,7 @@ function TicketPricingPage() {
         <div className="pricing-card">
           <div className="pricing-header">
             <div>
-              <span className="page-label">CINEMA MANAGEMENT</span>
+              <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
               <h2>Quản lý giá vé</h2>
               <p>Cấu hình bảng giá theo ngày, khung giờ, nhóm khách và phụ thu.</p>
             </div>
@@ -139,7 +155,7 @@ function TicketPricingPage() {
                   <th>Học sinh, sinh viên</th>
                   <th>Người lớn</th>
                   <th>Người già, trẻ em</th>
-                  <th>Thành viên, vé online</th>
+                  <th>Thành viên, vé trực tuyến</th>
                 </tr>
               </thead>
 

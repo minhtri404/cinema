@@ -16,7 +16,9 @@ import {
   updateNews,
   uploadNewsImage,
 } from "../../../api/newsApi";
+import { cleanupMediaByUrl } from "../../../api/mediaApi";
 import "../../../styles/news.css";
+import { publicationStatusLabel } from "../../../utils/displayLabels";
 
 const currentStaff = () => {
   try {
@@ -192,12 +194,16 @@ function NewsPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const previousImageUrl = editingArticle?.imageUrl || "";
+    let uploadedImageUrl = "";
+
     try {
       setSaving(true);
       let imageUrl = form.imageUrl;
       if (imageFile) {
         const uploadResponse = await uploadNewsImage(imageFile);
         imageUrl = uploadResponse.data?.url || "";
+        uploadedImageUrl = imageUrl;
       }
 
       const payload = {
@@ -208,6 +214,9 @@ function NewsPage() {
 
       if (editingArticle) {
         await updateNews(editingArticle.id, payload);
+        if (previousImageUrl && previousImageUrl !== imageUrl) {
+          await cleanupMediaByUrl(previousImageUrl);
+        }
         alert("Cập nhật tin tức thành công.");
       } else {
         await createNews(payload);
@@ -219,6 +228,7 @@ function NewsPage() {
       setEditingArticle(null);
       await loadNews();
     } catch (error) {
+      if (uploadedImageUrl) await cleanupMediaByUrl(uploadedImageUrl);
       console.error("Lỗi lưu tin tức:", error);
       alert(errorMessage(error, "Lưu tin tức thất bại."));
     } finally {
@@ -230,6 +240,7 @@ function NewsPage() {
     if (!window.confirm(`Xóa tin tức "${article.title}"?`)) return;
     try {
       await deleteNews(article.id);
+      await cleanupMediaByUrl(article.imageUrl);
       setArticles((current) => current.filter((item) => item.id !== article.id));
       alert("Xóa tin tức thành công.");
     } catch (error) {
@@ -243,7 +254,7 @@ function NewsPage() {
         <div className="news-card">
           <header className="news-header">
             <div>
-              <span className="page-label">CINEMA MANAGEMENT</span>
+              <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
               <h2>Tin tức</h2>
               <p>Quản lý bài viết và thông tin truyền thông của rạp.</p>
             </div>
@@ -268,8 +279,8 @@ function NewsPage() {
               onChange={(event) => setStatusFilter(event.target.value)}
             >
               <option value="">Tất cả trạng thái</option>
-              <option value="ONLINE">ONLINE</option>
-              <option value="OFFLINE">OFFLINE</option>
+              <option value="ONLINE">Đang hiển thị</option>
+              <option value="OFFLINE">Đang ẩn</option>
             </select>
           </div>
 
@@ -304,7 +315,7 @@ function NewsPage() {
                             alt={article.title}
                             onError={(event) => {
                               event.currentTarget.src =
-                                "https://placehold.co/420x260/e2e8f0/64748b?text=No+Image";
+                                "https://placehold.co/420x260/e2e8f0/64748b?text=Kh%C3%B4ng+c%C3%B3+%E1%BA%A3nh";
                             }}
                           />
                         ) : (
@@ -314,7 +325,7 @@ function NewsPage() {
                       <td><p className="news-content-preview">{plainText(article.content)}</p></td>
                       <td>
                         <span className={`news-status ${article.status?.toLowerCase()}`}>
-                          {article.status}
+                          {publicationStatusLabel(article.status)}
                         </span>
                       </td>
                       <td>{article.staffName || "—"}</td>
@@ -380,7 +391,7 @@ function NewsPage() {
                       name="imageUrl"
                       value={form.imageUrl}
                       onChange={handleChange}
-                      placeholder="Hoặc dán URL ảnh"
+                      placeholder="Hoặc dán đường dẫn ảnh"
                     />
                   </div>
                   {previewUrl ? (
@@ -433,8 +444,8 @@ function NewsPage() {
                   <label>
                     <span>Trạng thái</span>
                     <select name="status" value={form.status} onChange={handleChange}>
-                      <option value="ONLINE">ONLINE</option>
-                      <option value="OFFLINE">OFFLINE</option>
+                      <option value="ONLINE">Đang hiển thị</option>
+                      <option value="OFFLINE">Đang ẩn</option>
                     </select>
                   </label>
                   <label>

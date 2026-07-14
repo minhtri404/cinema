@@ -175,6 +175,11 @@
   color: #b91c1c;
 }
 
+.event-status.expired {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
 .event-actions {
   display: flex;
   gap: 7px;

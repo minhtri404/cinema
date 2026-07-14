@@ -1,4 +1,5 @@
 import axiosClient from "./axiosClient";
+import { uploadImage } from "./mediaApi";
 
 export const getMovies = () => {
   return axiosClient.get("/api/movies");
@@ -18,12 +19,5 @@ export const deleteMovie = (id) => {
   return axiosClient.delete(`/api/movies/${id}`);
 };
 export const uploadMoviePoster = (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  return axiosClient.post("/api/uploads/movies", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  return uploadImage(file, "MOVIES");
 };

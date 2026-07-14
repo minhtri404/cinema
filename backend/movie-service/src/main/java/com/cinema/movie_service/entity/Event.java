@@ -40,6 +40,14 @@ public class Event {
     @Column(nullable = false, length = 20)
     private String status;
 
+    @Transient
+    public String getEffectiveStatus() {
+        if (endDate != null && endDate.isBefore(LocalDate.now())) {
+            return "EXPIRED";
+        }
+        return status;
+    }
+
     @Column(length = 100)
     private String staffName;
 

@@ -66,8 +66,14 @@
   box-shadow: 0 0 0 3px rgba(90, 115, 232, 0.12);
 }
 
+.room-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .room-table {
   width: 100%;
+  min-width: 1120px;
   border-collapse: collapse;
 }
 
@@ -114,10 +120,12 @@
 }
 
 .room-status {
+  display: inline-flex;
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .room-status.active {
@@ -141,6 +149,7 @@
   text-decoration: none;
   font-weight: 800;
   font-size: 13px;
+  white-space: nowrap;
 }
 
 .room-seat-btn:hover {

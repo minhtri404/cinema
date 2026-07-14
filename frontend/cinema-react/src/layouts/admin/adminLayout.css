@@ -6,24 +6,48 @@
 }
 
 .admin-sidebar {
-  width: 248px;
-  flex: 0 0 248px;
+  width: 76px;
+  flex: 0 0 76px;
+  box-sizing: border-box;
   margin: 18px;
   border: 1px solid #e4e7ec;
   border-radius: 8px;
   background: #ffffff;
   padding: 18px 14px;
   box-shadow: 0 12px 32px rgba(16, 24, 40, 0.08);
+  overflow: hidden;
+  transition: width 200ms ease, flex-basis 200ms ease;
+}
+
+.admin-sidebar:hover,
+.admin-sidebar:focus-within {
+  width: 248px;
+  flex-basis: 248px;
 }
 
 .sidebar-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 4px 6px;
+  padding: 4px 3px;
   color: #101828;
   font-size: 16px;
   font-weight: 700;
+}
+
+.brand-copy {
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  white-space: nowrap;
+  transition: width 200ms ease, opacity 120ms ease;
+}
+
+.admin-sidebar:hover .brand-copy,
+.admin-sidebar:focus-within .brand-copy {
+  width: 160px;
+  opacity: 1;
 }
 
 .sidebar-brand p {
@@ -35,6 +59,7 @@
 
 .brand-icon {
   display: grid;
+  flex: 0 0 38px;
   width: 38px;
   height: 38px;
   place-items: center;
@@ -64,13 +89,36 @@
   display: flex;
   min-height: 44px;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 0;
   border-radius: 8px;
   color: #475467;
   font-size: 15px;
   font-weight: 600;
-  padding: 10px 12px;
+  padding: 10px 0;
   text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 160ms ease, color 160ms ease, padding 200ms ease;
+}
+
+.sidebar-menu a span {
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 200ms ease, opacity 120ms ease;
+}
+
+.admin-sidebar:hover .sidebar-menu a,
+.admin-sidebar:focus-within .sidebar-menu a {
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.admin-sidebar:hover .sidebar-menu a span,
+.admin-sidebar:focus-within .sidebar-menu a span {
+  width: 160px;
+  opacity: 1;
 }
 
 .sidebar-menu a:hover,
@@ -80,6 +128,7 @@
 }
 
 .menu-icon {
+  flex: 0 0 22px;
   width: 22px;
   height: 22px;
   color: currentColor;
@@ -214,6 +263,13 @@
   .admin-sidebar {
     width: auto;
     flex-basis: auto;
+    overflow: visible;
+    transition: none;
+  }
+
+  .brand-copy {
+    width: auto;
+    opacity: 1;
   }
 
   .sidebar-menu {
@@ -223,6 +279,14 @@
 
   .sidebar-menu a {
     flex: 0 0 auto;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+  }
+
+  .sidebar-menu a span {
+    width: auto;
+    opacity: 1;
   }
 
   .admin-header {

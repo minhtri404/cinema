@@ -59,8 +59,14 @@
   box-shadow: 0 0 0 3px rgba(90, 115, 232, 0.12);
 }
 
+.theater-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .theater-table {
   width: 100%;
+  min-width: 1180px;
   border-collapse: collapse;
 }
 
@@ -89,10 +95,12 @@
 }
 
 .theater-status {
+  display: inline-flex;
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .theater-status.online {

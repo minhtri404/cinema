@@ -7,6 +7,7 @@ import {
   updateMovie,
   uploadMoviePoster,
 } from "../../../api/movieApi";
+import { cleanupMediaByUrl } from "../../../api/mediaApi";
 import { getYouTubeEmbedUrl } from "../../../utils/youtube";
 import "../../../styles/movie.css";
 
@@ -61,7 +62,7 @@ function MovieEditPage() {
       })
       .catch((err) => {
         if (!ignore) {
-          setError(err.response?.data?.message || "Khong tai duoc thong tin phim.");
+          setError(err.response?.data?.message || "Không tải được thông tin phim.");
         }
       })
       .finally(() => {
@@ -89,12 +90,12 @@ function MovieEditPage() {
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      alert("Chi chap nhan anh JPG, PNG hoac WEBP.");
+      alert("Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP.");
       return;
     }
 
-    if (file.size > 3 * 1024 * 1024) {
-      alert("Anh khong duoc vuot qua 3MB.");
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Ảnh không được vượt quá 5MB.");
       return;
     }
 
@@ -105,6 +106,8 @@ function MovieEditPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSaving(true);
+    const previousPosterUrl = form.posterUrl;
+    let uploadedPosterUrl = "";
 
     try {
       let finalPosterUrl = form.posterUrl;
@@ -112,6 +115,7 @@ function MovieEditPage() {
       if (posterFile) {
         const uploadRes = await uploadMoviePoster(posterFile);
         finalPosterUrl = uploadRes.data?.url || finalPosterUrl;
+        uploadedPosterUrl = finalPosterUrl;
       }
 
       await updateMovie(id, {
@@ -120,10 +124,15 @@ function MovieEditPage() {
         duration: Number(form.duration),
       });
 
+      if (previousPosterUrl && previousPosterUrl !== finalPosterUrl) {
+        await cleanupMediaByUrl(previousPosterUrl);
+      }
+
       navigate("/admin/movies");
     } catch (err) {
-      console.error("Loi sua phim:", err);
-      alert(err.response?.data?.message || "Sua phim that bai. Kiem tra backend hoac du lieu nhap.");
+      if (uploadedPosterUrl) await cleanupMediaByUrl(uploadedPosterUrl);
+      console.error("Lỗi sửa phim:", err);
+      alert(err.response?.data?.message || "Sửa phim thất bại. Vui lòng kiểm tra dữ liệu đã nhập.");
     } finally {
       setSaving(false);
     }
@@ -135,21 +144,21 @@ function MovieEditPage() {
         <div className="movie-card">
           <div className="movie-header">
             <div>
-              <span className="page-label">CINEMA MANAGEMENT</span>
-              <h2>Sua phim</h2>
-              <p>Cap nhat thong tin phim va poster.</p>
+              <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
+              <h2>Sửa phim</h2>
+              <p>Cập nhật thông tin phim và áp phích.</p>
             </div>
 
             <Link to="/admin/movies" className="movie-back-btn">
-              Quay lai
+              Quay lại
             </Link>
           </div>
 
           {loading ? (
-            <p className="movie-empty">Dang tai du lieu...</p>
+            <p className="movie-empty">Đang tải dữ liệu...</p>
           ) : error ? (
             <div className="movie-error">
-              <strong>Khong mo duoc phim</strong>
+              <strong>Không mở được phim</strong>
               <p>{error}</p>
             </div>
           ) : (
@@ -157,7 +166,7 @@ function MovieEditPage() {
               <div className="movie-form-main">
                 <div className="form-grid">
                   <div className="form-group">
-                    <label>Ten phim</label>
+                    <label>Tên phim</label>
                     <input
                       name="title"
                       value={form.title}
@@ -167,14 +176,14 @@ function MovieEditPage() {
                   </div>
 
                   <div className="form-group">
-                    <label>The loai</label>
+                    <label>Thể loại</label>
                     <select
                       name="genre"
                       value={form.genre}
                       onChange={handleChange}
                       required
                     >
-                      <option value="">Chon the loai</option>
+                      <option value="">Chọn thể loại</option>
                       {form.genre &&
                         !genres.some((genre) => genre.name === form.genre) && (
                           <option value={form.genre}>{form.genre}</option>
@@ -188,7 +197,7 @@ function MovieEditPage() {
                   </div>
 
                   <div className="form-group">
-                    <label>Thoi luong</label>
+                    <label>Thời lượng</label>
                     <input
                       type="number"
                       name="duration"
@@ -199,7 +208,7 @@ function MovieEditPage() {
                   </div>
 
                   <div className="form-group">
-                    <label>Dao dien</label>
+                    <label>Đạo diễn</label>
                     <input
                       name="director"
                       value={form.director}
@@ -208,7 +217,7 @@ function MovieEditPage() {
                   </div>
 
                   <div className="form-group">
-                    <label>Ngay phat hanh</label>
+                    <label>Ngày phát hành</label>
                     <input
                       type="date"
                       name="releaseDate"
@@ -219,38 +228,38 @@ function MovieEditPage() {
                   </div>
 
                   <div className="form-group">
-                    <label>Trang thai</label>
+                    <label>Trạng thái</label>
                     <select name="status" value={form.status} onChange={handleChange}>
-                      <option value="NOW_SHOWING">NOW_SHOWING</option>
-                      <option value="COMING_SOON">COMING_SOON</option>
-                      <option value="STOPPED">STOPPED</option>
+                      <option value="NOW_SHOWING">Đang chiếu</option>
+                      <option value="COMING_SOON">Sắp chiếu</option>
+                      <option value="STOPPED">Ngừng chiếu</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label>Poster URL</label>
+                  <label>Đường dẫn ảnh áp phích</label>
                   <input
                     name="posterUrl"
                     value={form.posterUrl}
                     onChange={handleChange}
-                    placeholder="Dan link anh neu khong upload file"
+                    placeholder="Dán đường dẫn ảnh nếu không tải tệp lên"
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Trailer YouTube</label>
+                  <label>Đoạn giới thiệu trên YouTube</label>
                   <input
                     name="trailerUrl"
                     value={form.trailerUrl}
                     onChange={handleChange}
-                    placeholder="Dan link YouTube hoac ID video"
+                    placeholder="Dán đường dẫn YouTube hoặc mã video"
                   />
                   {trailerEmbedUrl && (
                     <div className="trailer-preview">
                       <iframe
                         src={trailerEmbedUrl}
-                        title="Trailer preview"
+                        title="Xem trước đoạn giới thiệu"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowFullScreen
                       />
@@ -259,7 +268,7 @@ function MovieEditPage() {
                 </div>
 
                 <div className="form-group">
-                  <label>Mo ta</label>
+                  <label>Mô tả</label>
                   <textarea
                     name="description"
                     value={form.description}
@@ -270,27 +279,27 @@ function MovieEditPage() {
 
                 <div className="form-actions">
                   <Link to="/admin/movies" className="cancel-btn">
-                    Huy
+                    Hủy
                   </Link>
 
                   <button className="save-btn" disabled={saving}>
-                    {saving ? "Dang luu..." : "Luu thay doi"}
+                    {saving ? "Đang lưu..." : "Lưu thay đổi"}
                   </button>
                 </div>
               </div>
 
               <div className="movie-poster-panel">
-                <h5>Poster phim</h5>
-                <p>Chon anh moi neu muon thay poster hien tai.</p>
+                <h5>Áp phích phim</h5>
+                <p>Chọn ảnh mới nếu muốn thay áp phích hiện tại.</p>
 
                 <label className="poster-upload-box">
                   {previewUrl || form.posterUrl ? (
-                    <img src={previewUrl || form.posterUrl} alt="Poster preview" />
+                    <img src={previewUrl || form.posterUrl} alt="Xem trước áp phích" />
                   ) : (
                     <div className="poster-placeholder">
                       <span>+</span>
-                      <strong>Chon anh poster</strong>
-                      <small>JPG, PNG, WEBP - toi da 3MB</small>
+                      <strong>Chọn ảnh áp phích</strong>
+                      <small>JPG, PNG, WEBP - tối đa 5MB</small>
                     </div>
                   )}
 

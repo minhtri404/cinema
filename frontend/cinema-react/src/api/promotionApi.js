@@ -1,4 +1,5 @@
 import axiosClient from "./axiosClient";
+import { uploadImage } from "./mediaApi";
 
 export const getPromotions = () => axiosClient.get("/api/promotions");
 
@@ -12,10 +13,5 @@ export const deletePromotion = (id) =>
   axiosClient.delete(`/api/promotions/${id}`);
 
 export const uploadPromotionImage = (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  return axiosClient.post("/api/uploads/promotions", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  return uploadImage(file, "PROMOTIONS");
 };

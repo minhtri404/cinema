@@ -11,7 +11,9 @@ import {
   updateEvent,
   uploadEventImage,
 } from "../../../api/eventApi";
+import { cleanupMediaByUrl } from "../../../api/mediaApi";
 import "../../../styles/event.css";
+import { eventStatusLabel } from "../../../utils/displayLabels";
 
 const localDate = () => {
   const now = new Date();
@@ -37,6 +39,14 @@ const emptyForm = () => ({
   status: "ONLINE",
   staffName: currentStaff(),
 });
+
+const getEffectiveStatus = (event) => {
+  if (event.effectiveStatus) return event.effectiveStatus;
+  if (event.endDate && event.endDate < localDate()) return "EXPIRED";
+  return event.status || "ONLINE";
+};
+
+const getStatusLabel = eventStatusLabel;
 
 const getErrorMessage = (error, fallback) => {
   const data = error?.response?.data;
@@ -96,7 +106,7 @@ function EventPage() {
         [event.title, event.content, event.applyCondition, event.staffName]
           .filter(Boolean)
           .some((item) => item.toLowerCase().includes(value));
-      const matchesStatus = !statusFilter || event.status === statusFilter;
+      const matchesStatus = !statusFilter || getEffectiveStatus(event) === statusFilter;
       return matchesKeyword && matchesStatus;
     });
   }, [events, keyword, statusFilter]);
@@ -172,17 +182,24 @@ function EventPage() {
       return;
     }
 
+    const previousImageUrl = editingEvent?.imageUrl || "";
+    let uploadedImageUrl = "";
+
     try {
       setSaving(true);
       let imageUrl = form.imageUrl;
       if (imageFile) {
         const uploadResponse = await uploadEventImage(imageFile);
         imageUrl = uploadResponse.data?.url || "";
+        uploadedImageUrl = imageUrl;
       }
 
       const payload = { ...form, imageUrl };
       if (editingEvent) {
         await updateEvent(editingEvent.id, payload);
+        if (previousImageUrl && previousImageUrl !== imageUrl) {
+          await cleanupMediaByUrl(previousImageUrl);
+        }
         alert("Cập nhật sự kiện thành công.");
       } else {
         await createEvent(payload);
@@ -194,6 +211,7 @@ function EventPage() {
       setEditingEvent(null);
       await loadEvents();
     } catch (error) {
+      if (uploadedImageUrl) await cleanupMediaByUrl(uploadedImageUrl);
       console.error("Lỗi lưu sự kiện:", error);
       alert(getErrorMessage(error, "Lưu sự kiện thất bại."));
     } finally {
@@ -205,6 +223,7 @@ function EventPage() {
     if (!window.confirm(`Xóa sự kiện "${event.title}"?`)) return;
     try {
       await deleteEvent(event.id);
+      await cleanupMediaByUrl(event.imageUrl);
       setEvents((current) => current.filter((item) => item.id !== event.id));
       alert("Xóa sự kiện thành công.");
     } catch (error) {
@@ -218,7 +237,7 @@ function EventPage() {
         <div className="event-card">
           <header className="event-header">
             <div>
-              <span className="page-label">CINEMA MANAGEMENT</span>
+              <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
               <h2>Sự kiện</h2>
               <p>Quản lý chương trình khuyến mãi và quyền lợi khách hàng.</p>
             </div>
@@ -243,8 +262,9 @@ function EventPage() {
               onChange={(event) => setStatusFilter(event.target.value)}
             >
               <option value="">Tất cả trạng thái</option>
-              <option value="ONLINE">ONLINE</option>
-              <option value="OFFLINE">OFFLINE</option>
+              <option value="ONLINE">Mua trực tuyến</option>
+              <option value="OFFLINE">Mua tại quầy</option>
+              <option value="EXPIRED">Hết hạn</option>
             </select>
           </div>
 
@@ -272,53 +292,56 @@ function EventPage() {
                     <td colSpan="8" className="event-empty">Chưa có sự kiện phù hợp.</td>
                   </tr>
                 ) : (
-                  filteredEvents.map((event) => (
-                    <tr key={event.id}>
-                      <td className="event-title-cell">{event.title}</td>
-                      <td>
-                        {event.imageUrl ? (
-                          <img
-                            className="event-banner"
-                            src={event.imageUrl}
-                            alt={event.title}
-                            onError={(e) => {
-                              e.currentTarget.src =
-                                "https://placehold.co/320x160/e2e8f0/64748b?text=No+Image";
-                            }}
-                          />
-                        ) : (
-                          <div className="event-no-image"><ImageOutlinedIcon /></div>
-                        )}
-                      </td>
-                      <td><p className="event-clamp">{event.content || "—"}</p></td>
-                      <td><p className="event-clamp">{event.applyCondition || "—"}</p></td>
-                      <td className="event-time">
-                        <strong>{event.startDate}</strong>
-                        <span>đến {event.endDate}</span>
-                      </td>
-                      <td>
-                        <span className={`event-status ${event.status?.toLowerCase()}`}>
-                          {event.status}
-                        </span>
-                      </td>
-                      <td>{event.staffName || "—"}</td>
-                      <td>
-                        <div className="event-actions">
-                          <button type="button" onClick={() => openEdit(event)} title="Sửa">
-                            <EditOutlinedIcon fontSize="small" />
-                          </button>
-                          <button
-                            type="button"
-                            className="danger"
-                            onClick={() => handleDelete(event)}
-                            title="Xóa"
-                          >
-                            <DeleteOutlineRoundedIcon fontSize="small" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  filteredEvents.map((event) => {
+                    const effectiveStatus = getEffectiveStatus(event);
+                    return (
+                      <tr key={event.id}>
+                        <td className="event-title-cell">{event.title}</td>
+                        <td>
+                          {event.imageUrl ? (
+                            <img
+                              className="event-banner"
+                              src={event.imageUrl}
+                              alt={event.title}
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "https://placehold.co/320x160/e2e8f0/64748b?text=Kh%C3%B4ng+c%C3%B3+%E1%BA%A3nh";
+                              }}
+                            />
+                          ) : (
+                            <div className="event-no-image"><ImageOutlinedIcon /></div>
+                          )}
+                        </td>
+                        <td><p className="event-clamp">{event.content || "—"}</p></td>
+                        <td><p className="event-clamp">{event.applyCondition || "—"}</p></td>
+                        <td className="event-time">
+                          <strong>{event.startDate}</strong>
+                          <span>đến {event.endDate}</span>
+                        </td>
+                        <td>
+                          <span className={`event-status ${effectiveStatus.toLowerCase()}`}>
+                            {getStatusLabel(effectiveStatus)}
+                          </span>
+                        </td>
+                        <td>{event.staffName || "—"}</td>
+                        <td>
+                          <div className="event-actions">
+                            <button type="button" onClick={() => openEdit(event)} title="Sửa">
+                              <EditOutlinedIcon fontSize="small" />
+                            </button>
+                            <button
+                              type="button"
+                              className="danger"
+                              onClick={() => handleDelete(event)}
+                              title="Xóa"
+                            >
+                              <DeleteOutlineRoundedIcon fontSize="small" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -332,7 +355,7 @@ function EventPage() {
             <div className="event-modal-header">
               <div>
                 <h3>{editingEvent ? "Sửa sự kiện" : "Thêm sự kiện"}</h3>
-                <p>Nhập nội dung, thời gian và ảnh banner chương trình.</p>
+                <p>Nhập nội dung, thời gian và ảnh bìa chương trình.</p>
               </div>
               <button type="button" onClick={closeModal} aria-label="Đóng">×</button>
             </div>
@@ -345,7 +368,7 @@ function EventPage() {
                     name="title"
                     value={form.title}
                     onChange={handleChange}
-                    placeholder="Ví dụ: Happy Day - Thứ Ba vui vẻ"
+                    placeholder="Ví dụ: Ngày vui - Thứ Ba vui vẻ"
                     required
                   />
                 </label>
@@ -396,8 +419,8 @@ function EventPage() {
                 <label>
                   <span>Trạng thái</span>
                   <select name="status" value={form.status} onChange={handleChange}>
-                    <option value="ONLINE">ONLINE</option>
-                    <option value="OFFLINE">OFFLINE</option>
+                    <option value="ONLINE">Mua vé trực tuyến</option>
+                    <option value="OFFLINE">Mua vé tại quầy</option>
                   </select>
                 </label>
                 <label>
@@ -411,7 +434,7 @@ function EventPage() {
 
                 <div className="event-image-field full">
                   <div>
-                    <span>Ảnh banner</span>
+                    <span>Ảnh bìa</span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
@@ -421,7 +444,7 @@ function EventPage() {
                       name="imageUrl"
                       value={form.imageUrl}
                       onChange={handleChange}
-                      placeholder="Hoặc dán URL ảnh"
+                      placeholder="Hoặc dán đường dẫn ảnh"
                     />
                   </div>
                   {previewUrl ? (

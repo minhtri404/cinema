@@ -91,7 +91,7 @@ function GenreEditPage() {
         <div className="genre-card">
           <div className="genre-header">
             <div>
-              <span className="page-label">CINEMA MANAGEMENT</span>
+              <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
               <h2>Sửa thể loại</h2>
               <p>Cập nhật thông tin thể loại phim trong hệ thống.</p>
             </div>
@@ -108,7 +108,7 @@ function GenreEditPage() {
                 name="name"
                 value={form.name}
                 onChange={handleChange}
-                placeholder="Ví dụ: Action, Comedy, Drama..."
+                placeholder="Ví dụ: Hành động, Hài, Chính kịch..."
                 required
               />
             </div>
