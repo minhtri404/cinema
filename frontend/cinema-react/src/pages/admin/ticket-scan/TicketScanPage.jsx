@@ -9,6 +9,7 @@ import { BarcodeFormat, DecodeHintType } from "@zxing/library";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getBookings, useTicket } from "../../../api/bookingApi";
 import "../../../styles/ticket-scan.css";
+import { bookingStatusLabel, ticketStatusLabel } from "../../../utils/displayLabels";
 
 const formatDateTime = (date, time) => {
   if (!date && !time) return "—";
@@ -106,7 +107,7 @@ function TicketScanPage() {
     }
 
     if (booking.status !== "PAID") {
-      setMessage(`Vé chưa hợp lệ để nhận. Trạng thái booking: ${booking.status}.`);
+      setMessage(`Vé chưa hợp lệ để nhận. Trạng thái đơn vé: ${bookingStatusLabel(booking.status)}.`);
       setMessageType("error");
       return;
     }
@@ -118,7 +119,7 @@ function TicketScanPage() {
     }
 
     if (booking.ticket?.status !== "VALID") {
-      setMessage(`Vé không hợp lệ. Trạng thái vé: ${booking.ticket?.status || "UNKNOWN"}.`);
+      setMessage(`Vé không hợp lệ. Trạng thái vé: ${ticketStatusLabel(booking.ticket?.status)}.`);
       setMessageType("error");
       return;
     }
@@ -234,7 +235,7 @@ function TicketScanPage() {
       setBookings((current) =>
         current.map((booking) => (booking.id === updated.id ? updated : booking)),
       );
-      setMessage("Đã xác nhận nhận vé. Vé chuyển sang trạng thái USED.");
+      setMessage("Đã xác nhận nhận vé. Vé chuyển sang trạng thái đã sử dụng.");
       setMessageType("success");
     } catch (error) {
       setMessage(error?.response?.data?.message || "Xác nhận nhận vé thất bại.");
@@ -251,7 +252,7 @@ function TicketScanPage() {
       <div className="ticket-scan-card">
         <header className="ticket-scan-header">
           <div>
-            <span className="page-label">CINEMA MANAGEMENT</span>
+            <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
             <h2>Quét vé</h2>
             <p>Kiểm tra vé vào rạp, chống nhận vé trùng hoặc vé không hợp lệ.</p>
           </div>
@@ -263,7 +264,7 @@ function TicketScanPage() {
 
         <div className="ticket-scan-input-row">
           <label>
-            <span>Mã vé / QR / Booking code</span>
+            <span>Mã vé / QR / Mã đặt vé</span>
             <input
               value={ticketCode}
               onChange={(event) => setTicketCode(event.target.value)}
@@ -309,11 +310,15 @@ function TicketScanPage() {
                   <div>
                     <span>Trạng thái</span>
                     <strong className={canUseTicket ? "valid" : "invalid"}>
-                      {canUseTicket ? "Vé hợp lệ" : selectedBooking.ticket?.status || selectedBooking.status}
+                      {canUseTicket
+                        ? "Vé hợp lệ"
+                        : selectedBooking.ticket?.status
+                          ? ticketStatusLabel(selectedBooking.ticket.status)
+                          : bookingStatusLabel(selectedBooking.status)}
                     </strong>
                   </div>
                   <div><span>Mã vé</span><strong>{selectedBooking.ticket?.ticketCode || "—"}</strong></div>
-                  <div><span>Mã booking</span><strong>{selectedBooking.bookingCode || "—"}</strong></div>
+                  <div><span>Mã đặt vé</span><strong>{selectedBooking.bookingCode || "—"}</strong></div>
                   <div><span>Khách hàng</span><strong>{selectedBooking.customerName || "—"}</strong></div>
                 </div>
 
@@ -344,7 +349,7 @@ function TicketScanPage() {
                   >
                     <strong>{booking.ticket?.ticketCode}</strong>
                     <span>{booking.movieTitle}</span>
-                    <small>{booking.ticket?.status}</small>
+                    <small>{ticketStatusLabel(booking.ticket?.status)}</small>
                   </button>
                 ))
               )}
@@ -382,7 +387,7 @@ function TicketScanPage() {
               <input
                 value={ticketCode}
                 onChange={(event) => setTicketCode(event.target.value)}
-                placeholder="Mã vé / booking / QR"
+                placeholder="Mã vé / mã đặt vé / QR"
               />
             </label>
             <div className="ticket-scanner-actions">

@@ -7,6 +7,7 @@ import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
 import { createFood, deleteFood, getFoods, updateFood, updateFoodStock, uploadComboImage } from "../../../api/foodApi";
+import { inventoryStatusLabel } from "../../../utils/displayLabels";
 import "../../../styles/combo.css";
 
 const emptyForm = () => ({
@@ -219,7 +220,7 @@ function ComboPage() {
     <section className="combo-page">
       <div className="combo-hero">
         <div>
-          <span className="page-label">CINEMA MANAGEMENT</span>
+          <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
           <h2>Combo</h2>
           <p>Quản lý combo bắp nước bán kèm vé, giá bán, tồn kho và trạng thái kinh doanh.</p>
         </div>
@@ -265,9 +266,9 @@ function ComboPage() {
           </label>
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option value="">Tất cả trạng thái</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
-            <option value="OUT_OF_STOCK">OUT_OF_STOCK</option>
+            <option value="ACTIVE">Đang bán</option>
+            <option value="INACTIVE">Ngừng bán</option>
+            <option value="OUT_OF_STOCK">Hết hàng</option>
           </select>
         </div>
 
@@ -288,7 +289,7 @@ function ComboPage() {
                       <FastfoodOutlinedIcon />
                     )}
                     <span className={`combo-status ${combo.status?.toLowerCase().replaceAll("_", "-")}`}>
-                      {combo.status}
+                      {inventoryStatusLabel(combo.status)}
                     </span>
                   </div>
 
@@ -350,7 +351,7 @@ function ComboPage() {
                 <label><span>Giá vốn</span><input type="number" min="0" step="1000" name="costPrice" value={form.costPrice} onChange={handleChange} /></label>
                 <label><span>Tồn kho</span><input type="number" min="0" name="stockQuantity" value={form.stockQuantity} onChange={handleChange} /></label>
                 <label><span>Ngưỡng cảnh báo</span><input type="number" min="0" name="lowStockThreshold" value={form.lowStockThreshold} onChange={handleChange} /></label>
-                <label><span>Trạng thái</span><select name="status" value={form.status} onChange={handleChange}><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option><option value="OUT_OF_STOCK">OUT_OF_STOCK</option></select></label>
+                <label><span>Trạng thái</span><select name="status" value={form.status} onChange={handleChange}><option value="ACTIVE">Đang bán</option><option value="INACTIVE">Ngừng bán</option><option value="OUT_OF_STOCK">Hết hàng</option></select></label>
                 <label><span>Thứ tự</span><input type="number" min="0" name="displayOrder" value={form.displayOrder} onChange={handleChange} /></label>
                 <label className="full"><span>URL ảnh</span><input name="imageUrl" value={form.imageUrl} onChange={handleChange} placeholder="https://..." /></label>
                 <div className="combo-upload-field full">

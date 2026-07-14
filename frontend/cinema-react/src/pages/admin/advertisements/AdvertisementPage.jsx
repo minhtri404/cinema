@@ -12,6 +12,7 @@ import {
   updateAdvertisement,
   uploadAdvertisementImage,
 } from "../../../api/advertisementApi";
+import { publicationStatusLabel } from "../../../utils/displayLabels";
 import "../../../styles/advertisement.css";
 
 const today = () => {
@@ -42,8 +43,8 @@ const emptyForm = () => ({
 const placementLabel = {
   HOME_BANNER: "Trang chủ",
   PROMOTION_BANNER: "Khuyến mãi",
-  SIDEBAR_BANNER: "Sidebar",
-  POPUP: "Popup",
+  SIDEBAR_BANNER: "Thanh bên",
+  POPUP: "Cửa sổ bật lên",
 };
 
 const errorMessage = (error, fallback) => {
@@ -220,9 +221,9 @@ function AdvertisementPage() {
     <section className="advertisement-page">
       <div className="advertisement-hero">
         <div>
-          <span className="page-label">CINEMA MANAGEMENT</span>
+          <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
           <h2>Quảng cáo</h2>
-          <p>Quản lý banner hiển thị trên trang chủ, khuyến mãi, sidebar và popup.</p>
+          <p>Quản lý ảnh quảng cáo hiển thị trên trang chủ, khuyến mãi, thanh bên và cửa sổ bật lên.</p>
         </div>
         <button type="button" onClick={openCreate}>
           <AddRoundedIcon fontSize="small" />
@@ -232,8 +233,8 @@ function AdvertisementPage() {
 
       <div className="advertisement-summary">
         <article><span>Tổng banner</span><strong>{summary.total}</strong></article>
-        <article><span>Online</span><strong>{summary.online}</strong></article>
-        <article><span>Offline</span><strong>{summary.offline}</strong></article>
+        <article><span>Đang hiển thị</span><strong>{summary.online}</strong></article>
+        <article><span>Đang ẩn</span><strong>{summary.offline}</strong></article>
         <article><span>Trang chủ</span><strong>{summary.home}</strong></article>
       </div>
 
@@ -252,13 +253,13 @@ function AdvertisementPage() {
             <option value="">Tất cả vị trí</option>
             <option value="HOME_BANNER">Trang chủ</option>
             <option value="PROMOTION_BANNER">Khuyến mãi</option>
-            <option value="SIDEBAR_BANNER">Sidebar</option>
-            <option value="POPUP">Popup</option>
+            <option value="SIDEBAR_BANNER">Thanh bên</option>
+            <option value="POPUP">Cửa sổ bật lên</option>
           </select>
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option value="">Tất cả trạng thái</option>
-            <option value="ONLINE">ONLINE</option>
-            <option value="OFFLINE">OFFLINE</option>
+            <option value="ONLINE">Đang hiển thị</option>
+            <option value="OFFLINE">Đang ẩn</option>
           </select>
         </div>
 
@@ -299,7 +300,7 @@ function AdvertisementPage() {
                     </td>
                     <td><span className="advertisement-placement">{placementLabel[item.placement] || item.placement}</span></td>
                     <td className="advertisement-date"><strong>{item.startDate}</strong><span>đến {item.endDate}</span></td>
-                    <td><span className={`advertisement-status ${item.status?.toLowerCase()}`}>{item.status}</span></td>
+                    <td><span className={`advertisement-status ${item.status?.toLowerCase()}`}>{publicationStatusLabel(item.status)}</span></td>
                     <td>{item.displayOrder}</td>
                     <td>
                       <div className="advertisement-actions">
@@ -335,12 +336,12 @@ function AdvertisementPage() {
               <div className="advertisement-form-grid">
                 <label className="full"><span>Tên quảng cáo *</span><input name="title" value={form.title} onChange={handleChange} required /></label>
                 <label className="full"><span>Mô tả</span><textarea name="description" value={form.description} onChange={handleChange} rows="3" /></label>
-                <label><span>Vị trí</span><select name="placement" value={form.placement} onChange={handleChange}><option value="HOME_BANNER">Trang chủ</option><option value="PROMOTION_BANNER">Khuyến mãi</option><option value="SIDEBAR_BANNER">Sidebar</option><option value="POPUP">Popup</option></select></label>
-                <label><span>Trạng thái</span><select name="status" value={form.status} onChange={handleChange}><option value="ONLINE">ONLINE</option><option value="OFFLINE">OFFLINE</option></select></label>
+                <label><span>Vị trí</span><select name="placement" value={form.placement} onChange={handleChange}><option value="HOME_BANNER">Trang chủ</option><option value="PROMOTION_BANNER">Khuyến mãi</option><option value="SIDEBAR_BANNER">Thanh bên</option><option value="POPUP">Cửa sổ bật lên</option></select></label>
+                <label><span>Trạng thái</span><select name="status" value={form.status} onChange={handleChange}><option value="ONLINE">Đang hiển thị</option><option value="OFFLINE">Đang ẩn</option></select></label>
                 <label><span>Ngày bắt đầu</span><input type="date" name="startDate" value={form.startDate} onChange={handleChange} required /></label>
                 <label><span>Ngày kết thúc</span><input type="date" name="endDate" value={form.endDate} onChange={handleChange} required /></label>
                 <label><span>Thứ tự hiển thị</span><input type="number" min="0" name="displayOrder" value={form.displayOrder} onChange={handleChange} /></label>
-                <label><span>Link đích</span><input name="targetUrl" value={form.targetUrl} onChange={handleChange} placeholder="/admin/promotions hoặc https://..." /></label>
+                <label><span>Đường dẫn đích</span><input name="targetUrl" value={form.targetUrl} onChange={handleChange} placeholder="/admin/promotions hoặc https://..." /></label>
                 <label className="full hidden-image-url"><span>URL ảnh</span><input name="imageUrl" value={form.imageUrl} onChange={handleChange} /></label>
                 <div className="advertisement-upload-field full">
                   <label>
