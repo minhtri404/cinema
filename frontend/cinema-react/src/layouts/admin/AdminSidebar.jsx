@@ -11,6 +11,11 @@ import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
 import CelebrationOutlinedIcon from "@mui/icons-material/CelebrationOutlined";
 import NewspaperOutlinedIcon from "@mui/icons-material/NewspaperOutlined";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
+import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
+import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
+import QrCodeScannerOutlinedIcon from "@mui/icons-material/QrCodeScannerOutlined";
+import RestaurantMenuOutlinedIcon from "@mui/icons-material/RestaurantMenuOutlined";
+import TapasOutlinedIcon from "@mui/icons-material/TapasOutlined";
 import { NavLink } from "react-router-dom";
 
 const menuItems = [
@@ -23,9 +28,14 @@ const menuItems = [
   { label: "Sự kiện", path: "/admin/events", Icon: CelebrationOutlinedIcon },
   { label: "Tin tức", path: "/admin/news", Icon: NewspaperOutlinedIcon },
   { label: "Khuyến mãi", path: "/admin/promotions", Icon: LocalOfferOutlinedIcon },
+  { label: "Quảng cáo", path: "/admin/advertisements", Icon: CampaignOutlinedIcon },
+  { label: "Thức ăn", path: "/admin/foods", Icon: RestaurantMenuOutlinedIcon },
+  { label: "Combo", path: "/admin/combos", Icon: TapasOutlinedIcon },
   { label: "Vé", path: "/admin/bookings", Icon: ConfirmationNumberRoundedIcon },
+  { label: "Quét vé", path: "/admin/ticket-scan", Icon: QrCodeScannerOutlinedIcon },
   { label: "Giá vé", path: "/admin/ticket-pricing", Icon: PaidOutlinedIcon },
   { label: "Người dùng", path: "/admin/users", Icon: GroupRoundedIcon, adminOnly: true },
+  { label: "Nhân viên", path: "/admin/staff", Icon: ManageAccountsOutlinedIcon, adminOnly: true },
 
 ];
 

@@ -3,14 +3,20 @@ package com.cinema.booking_service.controller;
 import com.cinema.booking_service.client.UserClient;
 import com.cinema.booking_service.dto.BookedSeatDetail;
 import com.cinema.booking_service.entity.Booking;
+import com.cinema.booking_service.entity.BookingFood;
 import com.cinema.booking_service.entity.BookingSeat;
+import com.cinema.booking_service.entity.Payment;
+import com.cinema.booking_service.entity.Ticket;
 import com.cinema.booking_service.repository.BookingRepository;
 import com.cinema.booking_service.repository.BookingSeatRepository;
 import com.cinema.booking_service.security.CurrentUser;
 import com.cinema.booking_service.security.CurrentUserFilter;
 import com.cinema.booking_service.service.BookingNotificationService;
+import com.cinema.booking_service.service.ProductServiceClient;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.HashMap;
@@ -31,15 +38,24 @@ import java.util.Set;
 @CrossOrigin("*")
 public class BookingController {
 
+    private static final DateTimeFormatter CODE_TIME = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
     private final BookingRepository bookingRepository;
     private final BookingSeatRepository bookingSeatRepository;
     private final UserClient userClient;
     private final BookingNotificationService notificationService;
+    private final ProductServiceClient productServiceClient;
 
     @GetMapping
     public List<Booking> getAll(HttpServletRequest request) {
         requireStaffOrAdmin(currentUser(request));
-        return bookingRepository.findAll();
+        return bookingRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @GetMapping("/tickets")
+    public List<Booking> getTicketsForAdmin(HttpServletRequest request) {
+        requireStaffOrAdmin(currentUser(request));
+        return bookingRepository.findAllByOrderByCreatedAtDesc();
     }
 
     @GetMapping("/{id}")
@@ -57,6 +73,15 @@ public class BookingController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chi chu tai khoan moi duoc xem don hang");
         }
         return bookingRepository.findByUserId(userId);
+    }
+
+    @GetMapping("/product/{productId}")
+    public Map<String, Object> getProductForOrder(
+            @PathVariable Long productId,
+            HttpServletRequest request
+    ) {
+        currentUser(request);
+        return productServiceClient.getProductById(productId);
     }
 
     @GetMapping("/showtime/{showtimeId}/booked-seats")
@@ -122,6 +147,15 @@ public class BookingController {
     private Booking createBooking(Booking booking) {
         userClient.getById(booking.getUserId());
 
+        LocalDateTime now = LocalDateTime.now();
+        booking.setId(null);
+        booking.setBookingCode("BK" + now.format(CODE_TIME));
+        booking.setExpiredAt(now.plusMinutes(15));
+        booking.setPaidAt(null);
+        booking.setCancelledAt(null);
+        booking.setTicket(null);
+        booking.getPayments().clear();
+
         if (booking.getShowtimeId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Suất chiếu không được để trống");
         }
@@ -153,22 +187,42 @@ public class BookingController {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Một hoặc nhiều ghế đã được đặt");
         }
 
-        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal ticketAmount = BigDecimal.ZERO;
 
         for (BookingSeat seat : requestedSeats) {
-            total = total.add(seat.getPrice());
+            ticketAmount = ticketAmount.add(seat.getPrice());
             seat.setBooking(booking);
         }
 
-        booking.setTotalAmount(total);
+        BigDecimal foodAmount = BigDecimal.ZERO;
+        for (BookingFood food : booking.getFoods()) {
+            BigDecimal quantity = BigDecimal.valueOf(food.getQuantity() == null ? 0 : food.getQuantity());
+            BigDecimal totalPrice = value(food.getTotalPrice());
+            if (totalPrice.signum() == 0) {
+                totalPrice = value(food.getUnitPrice()).multiply(quantity);
+                food.setTotalPrice(totalPrice);
+            }
+            foodAmount = foodAmount.add(totalPrice);
+            food.setBooking(booking);
+        }
+
+        BigDecimal discountAmount = value(booking.getDiscountAmount());
+        booking.setTicketAmount(ticketAmount);
+        booking.setFoodAmount(foodAmount);
+        booking.setDiscountAmount(discountAmount);
+        booking.setTotalAmount(ticketAmount.add(foodAmount).subtract(discountAmount));
         booking.setStatus("PENDING");
-        booking.setCreatedAt(LocalDateTime.now());
+        booking.setCreatedAt(now);
 
         return bookingRepository.save(booking);
     }
 
     @PutMapping({"/{id}/pay", "/{id}/confirm"})
-    public Booking markPaid(@PathVariable Long id, HttpServletRequest request) {
+    public Booking markPaid(
+            @PathVariable Long id,
+            @RequestBody(required = false) PaymentRequest paymentRequest,
+            HttpServletRequest request
+    ) {
         requireStaffOrAdmin(currentUser(request));
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy vé đặt"));
@@ -177,7 +231,35 @@ public class BookingController {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking đã hủy không thể thanh toán");
         }
 
+        LocalDateTime now = LocalDateTime.now();
         booking.setStatus("PAID");
+        booking.setPaidAt(now);
+
+        Payment payment = Payment.builder()
+                .paymentMethod(paymentRequest != null && paymentRequest.getPaymentMethod() != null
+                        ? paymentRequest.getPaymentMethod() : "ONLINE")
+                .amount(booking.getTotalAmount())
+                .status("SUCCESS")
+                .transactionCode(paymentRequest != null && paymentRequest.getTransactionCode() != null
+                        ? paymentRequest.getTransactionCode() : "PAY" + now.format(CODE_TIME))
+                .createdAt(now)
+                .paidAt(now)
+                .booking(booking)
+                .build();
+        booking.getPayments().add(payment);
+
+        if (booking.getTicket() == null) {
+            booking.setTicket(Ticket.builder()
+                    .ticketCode("TK" + now.format(CODE_TIME) + booking.getId())
+                    .qrCode("QR-" + booking.getBookingCode())
+                    .status("VALID")
+                    .issuedAt(now)
+                    .booking(booking)
+                    .build());
+        } else {
+            booking.getTicket().setStatus("VALID");
+            booking.getTicket().setIssuedAt(now);
+        }
         Booking saved = bookingRepository.save(booking);
         notificationService.bookingPaid(saved);
         return saved;
@@ -191,9 +273,33 @@ public class BookingController {
         requireOwnerOrStaffOrAdmin(booking, currentUser(request));
 
         booking.setStatus("CANCELLED");
+        booking.setCancelledAt(LocalDateTime.now());
+        if (booking.getTicket() != null) booking.getTicket().setStatus("CANCELLED");
         Booking saved = bookingRepository.save(booking);
         notificationService.bookingCancelled(saved);
         return saved;
+    }
+
+    @PutMapping("/{id}/expire")
+    public Booking expire(@PathVariable Long id, HttpServletRequest request) {
+        requireStaffOrAdmin(currentUser(request));
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vé đặt"));
+        if (!"PAID".equalsIgnoreCase(booking.getStatus())) booking.setStatus("EXPIRED");
+        return bookingRepository.save(booking);
+    }
+
+    @PutMapping("/{id}/use-ticket")
+    public Booking useTicket(@PathVariable Long id, HttpServletRequest request) {
+        requireStaffOrAdmin(currentUser(request));
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vé đặt"));
+        if (booking.getTicket() == null || !"VALID".equals(booking.getTicket().getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Vé không hợp lệ hoặc đã được sử dụng");
+        }
+        booking.getTicket().setStatus("USED");
+        booking.getTicket().setUsedAt(LocalDateTime.now());
+        return bookingRepository.save(booking);
     }
 
     @DeleteMapping("/{id}")
@@ -253,6 +359,10 @@ public class BookingController {
                 || normalized.equals("ĐÃ_HỦY");
     }
 
+    private BigDecimal value(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
+    }
+
     private UserClient.UserSummary getUserSafely(Long userId) {
         if (userId == null) return null;
         try {
@@ -260,5 +370,12 @@ public class BookingController {
         } catch (RuntimeException ignored) {
             return null;
         }
+    }
+
+    @Getter
+    @Setter
+    public static class PaymentRequest {
+        private String paymentMethod;
+        private String transactionCode;
     }
 }
