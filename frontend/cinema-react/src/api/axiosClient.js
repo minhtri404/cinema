@@ -9,7 +9,7 @@ const axiosClient = axios.create({
 
 axiosClient.interceptors.request.use((config) => {
   try {
-    const auth = JSON.parse(localStorage.getItem("auth") || "{}");
+    const auth = JSON.parse(localStorage.getItem("auth") || sessionStorage.getItem("auth") || "{}");
     const token = auth.accessToken || auth.token;
 
     if (token) {
@@ -17,6 +17,7 @@ axiosClient.interceptors.request.use((config) => {
     }
   } catch {
     localStorage.removeItem("auth");
+    sessionStorage.removeItem("auth");
   }
 
   return config;

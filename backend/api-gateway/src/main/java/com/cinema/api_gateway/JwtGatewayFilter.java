@@ -45,6 +45,7 @@ public class JwtGatewayFilter extends OncePerRequestFilter {
         }
         return path.startsWith("/api/auth/login")
                 || path.startsWith("/api/auth/register")
+                || path.startsWith("/api/auth/verify-email")
                 || path.startsWith("/api/auth/refresh")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui");

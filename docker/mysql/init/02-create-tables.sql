@@ -677,6 +677,9 @@ CREATE TABLE `users` (
   `password` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `role` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email_verified` bit(1) DEFAULT b'1',
+  `email_verification_token` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email_verification_token_expires_at` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK6dotkott2kjsp8vw4d0m25fb7` (`email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -688,7 +691,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'2026-07-13 18:33:41.244874','admin@example.invalid','Demo Admin','demo_password_change_me',NULL,'ADMIN'),(2,'2026-07-13 18:54:32.000000','staff01@example.invalid','Demo Staff 01','demo_password_change_me',NULL,'STAFF'),(3,'2026-07-13 18:54:32.000000','staff02@example.invalid','Demo Staff 02','demo_password_change_me',NULL,'STAFF'),(4,'2026-07-13 18:54:32.000000','staff03@example.invalid','Demo Staff 03','demo_password_change_me',NULL,'STAFF'),(5,'2026-07-13 18:54:32.000000','manager@example.invalid','Demo Manager','demo_password_change_me',NULL,'ADMIN'),(6,'2026-07-13 18:54:32.000000','customer01@example.invalid','Demo Customer 01','demo_password_change_me',NULL,'CUSTOMER'),(7,'2026-07-13 18:54:32.000000','customer02@example.invalid','Demo Customer 02','demo_password_change_me',NULL,'CUSTOMER'),(8,'2026-07-13 19:26:00.000000','customer03@example.invalid','Demo Customer 03','demo_password_change_me',NULL,'CUSTOMER'),(9,'2026-07-13 19:26:00.000000','customer04@example.invalid','Demo Customer 04','demo_password_change_me',NULL,'CUSTOMER'),(10,'2026-07-13 19:26:00.000000','customer05@example.invalid','Demo Customer 05','demo_password_change_me',NULL,'CUSTOMER');
+INSERT INTO `users` (`id`,`created_at`,`email`,`full_name`,`password`,`phone`,`role`,`email_verified`,`email_verification_token`,`email_verification_token_expires_at`) VALUES (1,'2026-07-13 18:33:41.244874','admin@example.invalid','Demo Admin','demo_password_change_me',NULL,'ADMIN',b'1',NULL,NULL),(2,'2026-07-13 18:54:32.000000','staff01@example.invalid','Demo Staff 01','demo_password_change_me',NULL,'STAFF',b'1',NULL,NULL),(3,'2026-07-13 18:54:32.000000','staff02@example.invalid','Demo Staff 02','demo_password_change_me',NULL,'STAFF',b'1',NULL,NULL),(4,'2026-07-13 18:54:32.000000','staff03@example.invalid','Demo Staff 03','demo_password_change_me',NULL,'STAFF',b'1',NULL,NULL),(5,'2026-07-13 18:54:32.000000','manager@example.invalid','Demo Manager','demo_password_change_me',NULL,'ADMIN',b'1',NULL,NULL),(6,'2026-07-13 18:54:32.000000','customer01@example.invalid','Demo Customer 01','demo_password_change_me',NULL,'CUSTOMER',b'1',NULL,NULL),(7,'2026-07-13 18:54:32.000000','customer02@example.invalid','Demo Customer 02','demo_password_change_me',NULL,'CUSTOMER',b'1',NULL,NULL),(8,'2026-07-13 19:26:00.000000','customer03@example.invalid','Demo Customer 03','demo_password_change_me',NULL,'CUSTOMER',b'1',NULL,NULL),(9,'2026-07-13 19:26:00.000000','customer04@example.invalid','Demo Customer 04','demo_password_change_me',NULL,'CUSTOMER',b'1',NULL,NULL),(10,'2026-07-13 19:26:00.000000','customer05@example.invalid','Demo Customer 05','demo_password_change_me',NULL,'CUSTOMER',b'1',NULL,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 

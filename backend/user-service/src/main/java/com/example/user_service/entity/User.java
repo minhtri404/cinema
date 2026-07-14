@@ -31,5 +31,12 @@ public class User {
 
     private String role;
 
+    private Boolean emailVerified;
+
+    @Column(length = 120)
+    private String emailVerificationToken;
+
+    private LocalDateTime emailVerificationTokenExpiresAt;
+
     private LocalDateTime createdAt;
 }

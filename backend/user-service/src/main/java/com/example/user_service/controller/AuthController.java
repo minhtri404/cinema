@@ -12,8 +12,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -36,6 +38,11 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @GetMapping("/verify-email")
+    public LoginResponse verifyEmail(@RequestParam String token) {
+        return authService.verifyEmail(token);
     }
 
     @PostMapping("/refresh")
@@ -66,6 +73,7 @@ public class AuthController {
                 .password(passwordEncoder.encode("123456"))
                 .phone("0900000000")
                 .role("ADMIN")
+                .emailVerified(true)
                 .createdAt(LocalDateTime.now())
                 .build();
 

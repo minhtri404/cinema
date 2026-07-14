@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import HomePage from "../pages/client/HomePage";
+import VerifyEmailPage from "../pages/client/VerifyEmailPage";
 import LoginPage from "../pages/auth/LoginPage";
 import AdminDashboardPage from "../pages/admin/dashboard/AdminDashboardPage";
 import AdminLayout from "../layouts/admin/AdminLayout";
@@ -29,7 +31,9 @@ function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LoginPage />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/admin" element={withAdminLayout(<AdminDashboardPage />)} />
         <Route path="/admin/movies" element={withAdminLayout(<MovieListPage />)} />
         <Route path="/admin/movies/create" element={<MovieCreatePage />} />

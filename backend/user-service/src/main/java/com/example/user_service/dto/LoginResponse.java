@@ -16,4 +16,7 @@ public class LoginResponse {
     private String role;
     private String fullName;
     private long expiresIn;
+    private String email;
+    private String phone;
+    private Boolean emailVerified;
 }
