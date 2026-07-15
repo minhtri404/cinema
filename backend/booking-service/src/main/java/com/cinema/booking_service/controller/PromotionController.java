@@ -8,7 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -32,6 +35,39 @@ public class PromotionController {
         return promotionRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/apply")
+    public ResponseEntity<?> apply(@RequestBody ApplyPromotionRequest request) {
+        if (request == null || request.code() == null || request.code().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Vui lòng nhập mã khuyến mãi."));
+        }
+        BigDecimal orderAmount = request.orderAmount() == null ? BigDecimal.ZERO : request.orderAmount();
+        if (orderAmount.signum() <= 0) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Tổng tiền đơn hàng không hợp lệ."));
+        }
+
+        Promotion promotion = promotionRepository.findByCodeIgnoreCase(request.code().trim())
+                .orElse(null);
+        if (promotion == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Mã khuyến mãi không tồn tại."));
+        }
+
+        ResponseEntity<?> availabilityError = validateAvailability(promotion, orderAmount);
+        if (availabilityError != null) return availabilityError;
+
+        BigDecimal discountAmount = calculateDiscount(promotion, orderAmount);
+        BigDecimal payableAmount = orderAmount.subtract(discountAmount).max(BigDecimal.ZERO);
+        return ResponseEntity.ok(Map.of(
+                "id", promotion.getId(),
+                "code", promotion.getCode(),
+                "name", promotion.getName(),
+                "discountType", promotion.getDiscountType(),
+                "discountValue", promotion.getDiscountValue(),
+                "discountAmount", discountAmount,
+                "payableAmount", payableAmount,
+                "message", "Áp dụng mã khuyến mãi thành công."
+        ));
     }
 
     @PostMapping
@@ -140,5 +176,46 @@ public class PromotionController {
     private String trimToNull(String value) {
         if (value == null || value.trim().isEmpty()) return null;
         return value.trim();
+    }
+
+    private ResponseEntity<?> validateAvailability(Promotion promotion, BigDecimal orderAmount) {
+        LocalDate today = LocalDate.now();
+        if (!"ONLINE".equalsIgnoreCase(promotion.getStatus())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", "Mã khuyến mãi không còn hoạt động."));
+        }
+        if (today.isBefore(promotion.getStartDate()) || today.isAfter(promotion.getEndDate())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", "Mã khuyến mãi đã hết hạn hoặc chưa đến thời gian áp dụng."));
+        }
+        if (promotion.getUsageLimit() != null && promotion.getUsageLimit() > 0
+                && promotion.getUsedCount() != null
+                && promotion.getUsedCount() >= promotion.getUsageLimit()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", "Mã khuyến mãi đã hết lượt sử dụng."));
+        }
+        BigDecimal minOrderAmount = promotion.getMinOrderAmount() == null ? BigDecimal.ZERO : promotion.getMinOrderAmount();
+        if (orderAmount.compareTo(minOrderAmount) < 0) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "message", "Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã.",
+                    "minOrderAmount", minOrderAmount
+            ));
+        }
+        return null;
+    }
+
+    private BigDecimal calculateDiscount(Promotion promotion, BigDecimal orderAmount) {
+        BigDecimal discount;
+        if ("FIXED".equalsIgnoreCase(promotion.getDiscountType())) {
+            discount = promotion.getDiscountValue();
+        } else {
+            discount = orderAmount
+                    .multiply(promotion.getDiscountValue())
+                    .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+        }
+        if (promotion.getMaxDiscountAmount() != null && promotion.getMaxDiscountAmount().signum() > 0) {
+            discount = discount.min(promotion.getMaxDiscountAmount());
+        }
+        return discount.min(orderAmount).max(BigDecimal.ZERO);
+    }
+
+    public record ApplyPromotionRequest(String code, BigDecimal orderAmount) {
     }
 }

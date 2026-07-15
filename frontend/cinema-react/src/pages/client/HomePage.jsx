@@ -1,312 +1,51 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAdvertisements } from "../../api/advertisementApi";
 import { loginUser, logoutUser, registerUser, resendVerificationEmail } from "../../api/authApi";
 import { createBooking, getBookedSeats, getSeatLocks, holdBookingSeats } from "../../api/bookingApi";
 import { getFoods } from "../../api/foodApi";
 import { getMovies } from "../../api/movieApi";
+import { createVnpayPayment } from "../../api/paymentApi";
+import { applyPromotion } from "../../api/promotionApi";
 import { getSeatsByRoom } from "../../api/seatApi";
 import { getShowtimes } from "../../api/showtimeApi";
 import { getTheaters } from "../../api/theaterApi";
+import {
+  BOOKING_HOLD_SECONDS,
+  fallbackBanners,
+  fallbackMovies,
+  initialLoginForm,
+  initialMovieFilters,
+  initialRegisterForm,
+} from "./home/clientHomeData";
+import {
+  buildScheduleDates,
+  clearClientAuth,
+  errorMessage,
+  formatDuration,
+  formatHoldTime,
+  formatMoney,
+  formatShowtimeTime,
+  getAgeDescription,
+  getAgeRating,
+  getPoster,
+  getTrailerEmbedUrl,
+  groupSeatsByRow,
+  hasActiveFilters,
+  movieMatchesFilters,
+  movieMatchesTab,
+  normalizeClientText,
+  normalizeSearchValue,
+  parseLocalDate,
+  readClientAuth,
+  saveClientAuth,
+  seatPrice,
+  splitGenres,
+  toDateInputValue,
+} from "./home/clientHomeUtils";
+import BookingPaymentStep from "./home/components/BookingPaymentStep";
+import ClientAuthModal from "./home/components/ClientAuthModal";
 import "../../styles/client-home.css";
-
-const fallbackBanners = [
-  {
-    id: "fallback-inception",
-    title: "Inception",
-    imageUrl:
-      "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=1600&q=85",
-  },
-];
-
-const fallbackMovies = [
-  {
-    id: "oppenheimer",
-    title: "OPPENHEIMER",
-    duration: 70,
-    genre: "Hành Động | Lịch Sử | Tâm Lý",
-    director: "Christopher Nolan",
-    ageRating: "C16",
-    posterUrl:
-      "https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=520&q=80",
-    status: "NOW_SHOWING",
-  },
-  {
-    id: "blue-whale",
-    title: "BLUE WHALE: THỬ THÁCH CÁ VOI XANH",
-    duration: 100,
-    genre: "Hành Động | Kinh Dị",
-    director: "Anna Zaytseva",
-    ageRating: "C18",
-    posterUrl:
-      "https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=520&q=80",
-    status: "NOW_SHOWING",
-  },
-  {
-    id: "detective",
-    title: "THANH TRA SÁT NHÂN",
-    duration: 180,
-    genre: "Hành Động",
-    director: "Đang cập nhật",
-    ageRating: "C16",
-    posterUrl:
-      "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=520&q=80",
-    status: "NOW_SHOWING",
-  },
-  {
-    id: "fanti",
-    title: "FANTI",
-    duration: 140,
-    genre: "Tâm Lý",
-    director: "Đang cập nhật",
-    ageRating: "C16",
-    posterUrl:
-      "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=520&q=80",
-    status: "NOW_SHOWING",
-  },
-];
-
-const initialLoginForm = {
-  email: "",
-  password: "",
-  remember: true,
-};
-
-const initialRegisterForm = {
-  fullName: "",
-  email: "",
-  phone: "",
-  password: "",
-  confirmPassword: "",
-};
-
-const initialMovieFilters = {
-  actor: "",
-  director: "",
-  genres: [],
-  ageRating: "",
-};
-
-const toDateInputValue = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const parseLocalDate = (value) => {
-  if (!value) return new Date();
-  const [year, month, day] = String(value).split("-").map(Number);
-  if (!year || !month || !day) return new Date(value);
-  return new Date(year, month - 1, day);
-};
-
-const buildScheduleDates = (startDate = new Date(), total = 8) =>
-  Array.from({ length: total }, (_, index) => {
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + index);
-    const value = toDateInputValue(date);
-    return {
-      value,
-      label: `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`,
-    };
-  });
-
-const formatShowtimeTime = (value) => String(value || "").slice(0, 5);
-
-const formatDuration = (duration) => {
-  if (!duration) return "Đang cập nhật";
-  return `${duration} phút`;
-};
-
-const getMovieStatus = (movie) => String(movie.status || "").trim().toUpperCase();
-
-const movieMatchesTab = (movie, tab) => {
-  const status = getMovieStatus(movie);
-  if (tab === "coming") return status === "COMING_SOON";
-  if (tab === "advance") return status === "ADVANCE_BOOKING" || status === "PRE_SALE";
-  return status === "NOW_SHOWING" || status === "ACTIVE" || !status;
-};
-
-const getPoster = (movie) => {
-  const value = movie.posterUrl || movie.imageUrl || movie.thumbnailUrl || movie.poster || "";
-  if (!value) return "";
-  if (/^https?:\/\//i.test(value) || value.startsWith("/")) return value;
-  if (value.startsWith("uploads/") || value.startsWith("media/")) return `/${value}`;
-  return value;
-};
-
-const getTrailerUrl = (movie) => movie.trailerUrl || movie.trailer || movie.videoUrl || "";
-
-const getTrailerEmbedUrl = (movie) => {
-  const value = String(getTrailerUrl(movie) || "").trim();
-  if (!value) return "";
-
-  try {
-    const url = new URL(value);
-    const host = url.hostname.replace(/^www\./, "");
-
-    if (host === "youtu.be") {
-      const videoId = url.pathname.split("/").filter(Boolean)[0];
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
-    }
-
-    if (host === "youtube.com" || host === "m.youtube.com") {
-      if (url.pathname.startsWith("/embed/")) return value;
-      if (url.pathname.startsWith("/shorts/")) {
-        const videoId = url.pathname.split("/").filter(Boolean)[1];
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
-      }
-      const videoId = url.searchParams.get("v");
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
-    }
-
-    return value;
-  } catch {
-    return "";
-  }
-};
-
-const getAgeRating = (movie) =>
-  movie.ageRating || movie.rating || movie.ageLimit || "Đang cập nhật";
-
-const ageRatingDescriptions = {
-  P: "PHIM PHÙ HỢP VỚI MỌI ĐỘ TUỔI",
-  K: "PHIM DÀNH CHO KHÁN GIẢ DƯỚI 13 TUỔI KHI CÓ NGƯỜI GIÁM HỘ",
-  C13: "PHIM ĐƯỢC PHỔ BIẾN ĐẾN NGƯỜI XEM TỪ ĐỦ 13 TUỔI TRỞ LÊN (13+)",
-  C16: "PHIM ĐƯỢC PHỔ BIẾN ĐẾN NGƯỜI XEM TỪ ĐỦ 16 TUỔI TRỞ LÊN (16+)",
-  C18: "PHIM ĐƯỢC PHỔ BIẾN ĐẾN NGƯỜI XEM TỪ ĐỦ 18 TUỔI TRỞ LÊN (18+)",
-};
-
-const getAgeDescription = (rating) => {
-  const normalizedRating = String(rating || "").trim().toUpperCase();
-  if (ageRatingDescriptions[normalizedRating]) return ageRatingDescriptions[normalizedRating];
-
-  const ageNumber = normalizedRating.replace(/\D/g, "");
-  if (ageNumber) {
-    return `PHIM ĐƯỢC PHỔ BIẾN ĐẾN NGƯỜI XEM TỪ ĐỦ ${ageNumber} TUỔI TRỞ LÊN (${ageNumber}+)`;
-  }
-
-  return "ĐANG CẬP NHẬT PHÂN LOẠI ĐỘ TUỔI";
-};
-
-const normalizeSearchValue = (value) =>
-  String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-
-const splitGenres = (genre) =>
-  String(genre || "")
-    .split(/[|,;/]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-const hasActiveFilters = (filters) =>
-  Boolean(
-    filters.actor.trim() ||
-      filters.director.trim() ||
-      filters.ageRating ||
-      filters.genres.length > 0,
-  );
-
-const movieMatchesFilters = (movie, filters) => {
-  const actorKeyword = normalizeSearchValue(filters.actor);
-  const directorKeyword = normalizeSearchValue(filters.director);
-  const movieActors = normalizeSearchValue(movie.cast || movie.actors || movie.actorNames);
-  const movieDirector = normalizeSearchValue(movie.director);
-  const movieRating = normalizeSearchValue(getAgeRating(movie));
-  const movieGenres = splitGenres(movie.genre).map(normalizeSearchValue);
-
-  if (actorKeyword && !movieActors.includes(actorKeyword)) return false;
-  if (directorKeyword && !movieDirector.includes(directorKeyword)) return false;
-  if (filters.ageRating && movieRating !== normalizeSearchValue(filters.ageRating)) return false;
-  if (
-    filters.genres.length > 0 &&
-    !filters.genres.every((genre) => movieGenres.includes(normalizeSearchValue(genre)))
-  ) {
-    return false;
-  }
-
-  return true;
-};
-
-const readClientAuth = () => {
-  try {
-    const raw = localStorage.getItem("clientAuth") || sessionStorage.getItem("clientAuth");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    localStorage.removeItem("clientAuth");
-    sessionStorage.removeItem("clientAuth");
-    return null;
-  }
-};
-
-const saveClientAuth = (auth, remember = true) => {
-  const payload = JSON.stringify(auth);
-  localStorage.removeItem("clientAuth");
-  sessionStorage.removeItem("clientAuth");
-  localStorage.removeItem("auth");
-  sessionStorage.removeItem("auth");
-
-  if (remember) {
-    localStorage.setItem("clientAuth", payload);
-    localStorage.setItem("auth", payload);
-  } else {
-    sessionStorage.setItem("clientAuth", payload);
-    sessionStorage.setItem("auth", payload);
-  }
-};
-
-const clearClientAuth = () => {
-  localStorage.removeItem("clientAuth");
-  sessionStorage.removeItem("clientAuth");
-  localStorage.removeItem("auth");
-  sessionStorage.removeItem("auth");
-};
-
-const errorMessage = (error, fallback) => {
-  const data = error?.response?.data;
-  if (typeof data === "string" && data.trim()) return data;
-  return data?.message || fallback;
-};
-
-const BOOKING_HOLD_SECONDS = 10 * 60;
-
-const formatHoldTime = (seconds) => {
-  const safeSeconds = Math.max(0, Number(seconds || 0));
-  const minutes = Math.floor(safeSeconds / 60);
-  const remainingSeconds = safeSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
-};
-
-const formatMoney = (value) => `${Number(value || 0).toLocaleString("vi-VN")} đ`;
-
-const seatPrice = (seat) => {
-  const type = String(seat.seatType || "").toUpperCase();
-  if (type.includes("COUPLE")) return 115000 + Number(seat.extraPrice || 0);
-  if (type.includes("VIP")) return 105000 + Number(seat.extraPrice || 0);
-  return 85000 + Number(seat.extraPrice || 0);
-};
-
-const groupSeatsByRow = (seats) => {
-  const groups = new Map();
-  seats
-    .slice()
-    .sort((a, b) => {
-      const rowCompare = String(a.seatRow || a.seatCode || "").localeCompare(String(b.seatRow || b.seatCode || ""));
-      if (rowCompare !== 0) return rowCompare;
-      return Number(a.seatNumber || 0) - Number(b.seatNumber || 0);
-    })
-    .forEach((seat) => {
-      const row = seat.seatRow || String(seat.seatCode || "?").replace(/[0-9]/g, "") || "?";
-      if (!groups.has(row)) groups.set(row, []);
-      groups.get(row).push(seat);
-    });
-  return Array.from(groups.entries()).map(([row, rowSeats]) => ({ row, seats: rowSeats }));
-};
-
 function HomePage() {
   const [movies, setMovies] = useState([]);
   const [banners, setBanners] = useState([]);
@@ -346,6 +85,10 @@ function HomePage() {
   const [bookingError, setBookingError] = useState("");
   const [bookingHoldExpiresAt, setBookingHoldExpiresAt] = useState(null);
   const [bookingHoldSeconds, setBookingHoldSeconds] = useState(BOOKING_HOLD_SECONDS);
+  const [promotionCode, setPromotionCode] = useState("");
+  const [appliedPromotion, setAppliedPromotion] = useState(null);
+  const [promotionMessage, setPromotionMessage] = useState("");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("VNPAY");
 
   useEffect(() => {
     let active = true;
@@ -543,6 +286,8 @@ function HomePage() {
     0,
   );
   const bookingTotal = bookingTicketTotal + bookingComboTotal;
+  const bookingDiscountTotal = Number(appliedPromotion?.discountAmount || 0);
+  const bookingPayableTotal = Math.max(0, bookingTotal - bookingDiscountTotal);
 
   useEffect(() => {
     if (view !== "booking" || !bookingHoldExpiresAt) return undefined;
@@ -696,6 +441,10 @@ function HomePage() {
     setBookingCombos([]);
     setBookingComboQuantities({});
     setBookingError("");
+    setPromotionCode("");
+    setAppliedPromotion(null);
+    setPromotionMessage("");
+    setSelectedPaymentMethod("VNPAY");
     setBookingHoldExpiresAt(null);
     setBookingHoldSeconds(BOOKING_HOLD_SECONDS);
     setView("booking");
@@ -865,7 +614,8 @@ function HomePage() {
     roomName: bookingShowtime.roomName || `Phòng #${bookingShowtime.roomId}`,
     showDate: bookingShowtime.showDate,
     startTime: bookingShowtime.startTime,
-    discountAmount: 0,
+    promotionCode: appliedPromotion?.code || null,
+    discountAmount: bookingDiscountTotal,
     seats: selectedBookingSeats.map((seat) => ({
       seatId: seat.id,
       seatCode: seat.seatCode,
@@ -881,6 +631,36 @@ function HomePage() {
     })),
   });
 
+  const handleApplyPromotion = async () => {
+    const code = promotionCode.trim();
+    if (!code) {
+      setPromotionMessage("Vui lòng nhập mã khuyến mãi.");
+      setAppliedPromotion(null);
+      return;
+    }
+
+    try {
+      setBookingLoading(true);
+      const response = await applyPromotion({
+        code,
+        orderAmount: bookingTotal,
+      });
+      setAppliedPromotion(response.data);
+      setPromotionMessage(response.data?.message || "Áp dụng mã khuyến mãi thành công.");
+    } catch (error) {
+      setAppliedPromotion(null);
+      setPromotionMessage(errorMessage(error, "Mã khuyến mãi không hợp lệ."));
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  const clearPromotion = () => {
+    setPromotionCode("");
+    setAppliedPromotion(null);
+    setPromotionMessage("");
+  };
+
   const submitClientBooking = async () => {
     if (!auth) {
       openAuthModal("login");
@@ -895,6 +675,22 @@ function HomePage() {
       setBookingLoading(true);
       setBookingError("");
       const response = await createBooking(buildClientBookingPayload());
+      const booking = response.data;
+
+      if (selectedPaymentMethod === "VNPAY") {
+        const paymentResponse = await createVnpayPayment({
+          bookingId: booking.id,
+          userId: auth?.userId || auth?.id,
+          amount: booking.totalAmount || bookingPayableTotal,
+          provider: "VNPAY",
+          paymentMethod: "VNPAY_QR",
+          description: `Thanh toán vé ${booking.bookingCode || booking.id}`,
+        });
+        const paymentUrl = paymentResponse.data?.paymentUrl;
+        if (!paymentUrl) throw new Error("Không tạo được URL thanh toán VNPAY.");
+        window.location.href = paymentUrl;
+        return;
+      }
       alert(`Đặt vé thành công. Mã đặt vé: ${response.data?.bookingCode || response.data?.id}`);
       await openBookingFlow(bookingShowtime, bookingMovie);
     } catch (error) {
@@ -1215,7 +1011,7 @@ function HomePage() {
               <div className="schedule-row" key={group.key}>
                 <div className="schedule-row-title">
                   {scheduleMode === "movie"
-                    ? group.theater?.name || `Rạp #${group.times[0]?.theaterId}`
+                    ? group.theater?.name || `Ráº¡p #${group.times[0]?.theaterId}`
                     : group.movie?.title || group.times[0]?.movieName}
                 </div>
                 <div className="schedule-row-times">
@@ -1308,7 +1104,7 @@ function HomePage() {
               <span>Member</span>
             </div>
             <div>
-              <strong>Tổng chi tiêu</strong>
+              <strong>Tá»•ng chi tiÃªu</strong>
               <span>0 VNĐ</span>
             </div>
             <div>
@@ -1318,7 +1114,7 @@ function HomePage() {
           </div>
 
           <button type="button" className="account-update">
-            Cập nhật
+            Cáº­p nháº­t
           </button>
         </div>
       </section>
@@ -1370,7 +1166,7 @@ function HomePage() {
     return (
       <main className="client-main movie-detail-page">
         <button type="button" className="movie-detail-back" onClick={() => setView("home")}>
-          ← Quay lại danh sách phim
+          â† Quay láº¡i danh sÃ¡ch phim
         </button>
 
         <section className="movie-detail-hero">
@@ -1398,7 +1194,7 @@ function HomePage() {
               <strong>Giới hạn độ tuổi:</strong> <span>{rating}</span> - {getAgeDescription(rating)}
             </p>
             <div className="movie-detail-description">
-              <h2>Nội dung</h2>
+              <h2>Ná»™i dung</h2>
               <p>{selectedMovie.description || "Nội dung phim đang được cập nhật."}</p>
             </div>
           </div>
@@ -1447,7 +1243,7 @@ function HomePage() {
                 detailGroups.map((group) => (
                   <div className="schedule-row" key={group.key}>
                     <div className="schedule-row-title">
-                      {group.theater?.name || `Rạp #${group.times[0]?.theaterId}`}
+                      {group.theater?.name || `Ráº¡p #${group.times[0]?.theaterId}`}
                     </div>
                     <div className="schedule-row-times">
                       <strong>{group.formatType}</strong>
@@ -1474,7 +1270,7 @@ function HomePage() {
 
     const rating = getAgeRating(bookingMovie);
     const showtimeLabel = `${bookingShowtime.showDate || ""} ${formatShowtimeTime(bookingShowtime.startTime)}`;
-    const roomName = bookingShowtime.roomName || `Phòng #${bookingShowtime.roomId}`;
+    const roomName = bookingShowtime.roomName || `PhÃ²ng #${bookingShowtime.roomId}`;
     const selectedSeatCodes = selectedBookingSeats.map((seat) => seat.seatCode).join(", ");
     const selectedComboText = selectedBookingCombos.map((combo) => `${combo.name} x${combo.quantity}`).join(", ");
 
@@ -1505,7 +1301,7 @@ function HomePage() {
             <div className="booking-side-summary">
               <p>🍿 Combo: <strong>{selectedComboText || "—"}</strong></p>
               <p>💺 Ghế: <strong>{selectedSeatCodes || "—"}</strong></p>
-              <p>= Tổng Tiền: <strong>{formatMoney(bookingTotal)}</strong></p>
+              <p>= Tổng Tiền: <strong>{formatMoney(bookingPayableTotal)}</strong></p>
               {selectedBookingSeats.length > 0 && (
                 <div className={`booking-hold-timer ${bookingHoldSeconds <= 60 ? "danger" : ""}`}>
                   <span>Thời gian giữ ghế</span>
@@ -1580,7 +1376,7 @@ function HomePage() {
                               disabled={sold || maintenance}
                               title={`${seat.seatCode} - ${formatMoney(seatPrice(seat))}`}
                             >
-                              {maintenance ? "X" : selected ? "✓" : seat.seatCode}
+                              {maintenance ? "X" : selected ? "âœ“" : seat.seatCode}
                             </button>
                           );
                         })}
@@ -1591,7 +1387,7 @@ function HomePage() {
 
                 <div className="client-booking-actions">
                   <button type="button" disabled={selectedBookingSeats.length === 0 || bookingLoading} onClick={() => setBookingStep(2)}>
-                    Tiếp theo
+                    Tiáº¿p theo
                   </button>
                 </div>
               </div>
@@ -1617,7 +1413,7 @@ function HomePage() {
                           </p>
                           <div className="combo-quantity">
                             <button type="button" onClick={() => updateBookingComboQuantity(combo.id, -1)}>
-                              −
+                              âˆ’
                             </button>
                             <input value={bookingComboQuantities[combo.id] || 0} readOnly />
                             <button type="button" onClick={() => updateBookingComboQuantity(combo.id, 1)}>
@@ -1632,43 +1428,32 @@ function HomePage() {
 
                 <div className="client-booking-actions">
                   <button type="button" className="secondary" onClick={() => setBookingStep(1)}>
-                    Trở lại
+                    Trá»Ÿ láº¡i
                   </button>
                   <button type="button" disabled={bookingLoading} onClick={() => setBookingStep(3)}>
-                    Tiếp theo
+                    Tiáº¿p theo
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="booking-payment-section">
-                <h1>Thanh toán</h1>
-                <div className="client-payment-card">
-                  <div>
-                    <span>Tiền vé</span>
-                    <strong>{formatMoney(bookingTicketTotal)}</strong>
-                  </div>
-                  <div>
-                    <span>Combo</span>
-                    <strong>{formatMoney(bookingComboTotal)}</strong>
-                  </div>
-                  <div className="total">
-                    <span>Tổng tiền</span>
-                    <strong>{formatMoney(bookingTotal)}</strong>
-                  </div>
-                </div>
-                <div className="client-payment-note">
-                  Sau khi bấm đặt vé, hệ thống lưu booking trạng thái PENDING. Chức năng thanh toán online có thể nối VNPay ở bước tiếp theo.
-                </div>
-                <div className="client-booking-actions">
-                  <button type="button" className="secondary" onClick={() => setBookingStep(2)}>
-                    Trở lại
-                  </button>
-                  <button type="button" disabled={bookingLoading} onClick={submitClientBooking}>
-                    Đặt vé
-                  </button>
-                </div>
-              </div>
-            )}
+              <BookingPaymentStep
+                bookingTicketTotal={bookingTicketTotal}
+                bookingComboTotal={bookingComboTotal}
+                bookingDiscountTotal={bookingDiscountTotal}
+                bookingPayableTotal={bookingPayableTotal}
+                promotionCode={promotionCode}
+                setPromotionCode={setPromotionCode}
+                appliedPromotion={appliedPromotion}
+                promotionMessage={promotionMessage}
+                bookingLoading={bookingLoading}
+                bookingTotal={bookingTotal}
+                handleApplyPromotion={handleApplyPromotion}
+                clearPromotion={clearPromotion}
+                selectedPaymentMethod={selectedPaymentMethod}
+                setSelectedPaymentMethod={setSelectedPaymentMethod}
+                setBookingStep={setBookingStep}
+                submitClientBooking={submitClientBooking}
+              />            )}
           </section>
         </section>
       </main>
@@ -1838,7 +1623,7 @@ function HomePage() {
               </button>
             )}
             <span>Ngôn ngữ:</span>
-            <span className="flag-vn">★</span>
+            <span className="flag-vn">🇻🇳</span>
           </div>
         </div>
       </header>
@@ -1853,124 +1638,25 @@ function HomePage() {
       {renderFilterPanel()}
 
       <footer className="client-footer" id="support">
-        <div>© HMCinema</div>
+        <div>Â© HMCinema</div>
         <div>Liên hệ / Hỗ trợ khách hàng</div>
       </footer>
 
-      {authMode && (
-        <div className="client-auth-overlay" onMouseDown={closeAuthModal}>
-          <div className="client-auth-modal" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="auth-modal-head">
-              <h2>{authMode === "login" ? "ĐĂNG NHẬP" : "ĐĂNG KÝ"}</h2>
-              <button type="button" onClick={closeAuthModal} aria-label="Đóng">
-                ×
-              </button>
-            </div>
-
-            {authMode === "login" ? (
-              <form className="client-auth-form" onSubmit={handleLogin}>
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={loginForm.email}
-                  onChange={(event) => setLoginForm((current) => ({ ...current, email: event.target.value }))}
-                  autoFocus
-                />
-                <input
-                  type="password"
-                  placeholder="Mật khẩu"
-                  value={loginForm.password}
-                  onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
-                />
-                <label className="remember-row">
-                  <input
-                    type="checkbox"
-                    checked={loginForm.remember}
-                    onChange={(event) => setLoginForm((current) => ({ ...current, remember: event.target.checked }))}
-                  />
-                  <span>Nhớ mật khẩu</span>
-                </label>
-
-                {authError && <p className="auth-error">{authError}</p>}
-                {authInfo && <p className="auth-info">{authInfo}</p>}
-
-                <button type="submit" className="auth-submit" disabled={authLoading}>
-                  {authLoading ? "ĐANG XỬ LÝ..." : "ĐĂNG NHẬP"}
-                </button>
-
-                <p className="auth-switch">
-                  Chưa có tài khoản ?{" "}
-                  <button type="button" onClick={() => openAuthModal("register")}>
-                    Đăng Ký
-                  </button>
-                </p>
-                <button
-                  type="button"
-                  className="forgot-password"
-                  onClick={() => setAuthInfo("Chức năng quên mật khẩu sẽ được bổ sung sau.")}
-                >
-                  Quên mật khẩu?
-                </button>
-              </form>
-            ) : (
-              <form className="client-auth-form" onSubmit={handleRegister}>
-                <input
-                  placeholder="Họ tên"
-                  value={registerForm.fullName}
-                  onChange={(event) => setRegisterForm((current) => ({ ...current, fullName: event.target.value }))}
-                  autoFocus
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={registerForm.email}
-                  onChange={(event) => setRegisterForm((current) => ({ ...current, email: event.target.value }))}
-                />
-                <input
-                  placeholder="Số điện thoại"
-                  value={registerForm.phone}
-                  onChange={(event) => setRegisterForm((current) => ({ ...current, phone: event.target.value }))}
-                />
-                <input
-                  type="password"
-                  placeholder="Mật khẩu"
-                  value={registerForm.password}
-                  onChange={(event) => setRegisterForm((current) => ({ ...current, password: event.target.value }))}
-                />
-                <input
-                  type="password"
-                  placeholder="Nhập lại mật khẩu"
-                  value={registerForm.confirmPassword}
-                  onChange={(event) =>
-                    setRegisterForm((current) => ({ ...current, confirmPassword: event.target.value }))
-                  }
-                />
-
-                {authError && <p className="auth-error">{authError}</p>}
-                {authInfo && (
-                  <div className="register-success-box">
-                    <strong>Đăng ký thành công!</strong>
-                    <span>{authInfo}</span>
-                    <small>Nếu chưa thấy email, hãy kiểm tra mục Spam/Thư rác.</small>
-                  </div>
-                )}
-
-                <button type="submit" className="auth-submit" disabled={authLoading}>
-                  {authLoading ? "ĐANG XỬ LÝ..." : "ĐĂNG KÝ"}
-                </button>
-
-                <p className="auth-switch">
-                  Đã có tài khoản ?{" "}
-                  <button type="button" onClick={() => openAuthModal("login")}>
-                    Đăng Nhập
-                  </button>
-                </p>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+      <ClientAuthModal
+        authMode={authMode}
+        loginForm={loginForm}
+        setLoginForm={setLoginForm}
+        registerForm={registerForm}
+        setRegisterForm={setRegisterForm}
+        authError={authError}
+        authInfo={authInfo}
+        authLoading={authLoading}
+        closeAuthModal={closeAuthModal}
+        openAuthModal={openAuthModal}
+        handleLogin={handleLogin}
+        handleRegister={handleRegister}
+        setAuthInfo={setAuthInfo}
+      />    </div>
   );
 }
 

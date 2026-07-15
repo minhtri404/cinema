@@ -7,9 +7,11 @@ import com.cinema.booking_service.entity.Booking;
 import com.cinema.booking_service.entity.BookingFood;
 import com.cinema.booking_service.entity.BookingSeat;
 import com.cinema.booking_service.entity.Payment;
+import com.cinema.booking_service.entity.Promotion;
 import com.cinema.booking_service.entity.Ticket;
 import com.cinema.booking_service.repository.BookingRepository;
 import com.cinema.booking_service.repository.BookingSeatRepository;
+import com.cinema.booking_service.repository.PromotionRepository;
 import com.cinema.booking_service.security.CurrentUser;
 import com.cinema.booking_service.security.CurrentUserFilter;
 import com.cinema.booking_service.service.BookingNotificationService;
@@ -28,7 +30,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -50,6 +54,7 @@ public class BookingController {
 
     private final BookingRepository bookingRepository;
     private final BookingSeatRepository bookingSeatRepository;
+    private final PromotionRepository promotionRepository;
     private final UserClient userClient;
     private final BookingNotificationService notificationService;
     private final ProductServiceClient productServiceClient;
@@ -353,11 +358,12 @@ public class BookingController {
             food.setBooking(booking);
         }
 
-        BigDecimal discountAmount = value(booking.getDiscountAmount());
+        BigDecimal orderAmount = ticketAmount.add(foodAmount);
+        BigDecimal discountAmount = applyPromotionToBooking(booking, orderAmount);
         booking.setTicketAmount(ticketAmount);
         booking.setFoodAmount(foodAmount);
         booking.setDiscountAmount(discountAmount);
-        booking.setTotalAmount(ticketAmount.add(foodAmount).subtract(discountAmount));
+        booking.setTotalAmount(orderAmount.subtract(discountAmount).max(BigDecimal.ZERO));
         booking.setStatus("PENDING");
         booking.setCreatedAt(now);
 
@@ -387,6 +393,58 @@ public class BookingController {
         Payment payment = Payment.builder()
                 .paymentMethod(paymentRequest != null && paymentRequest.getPaymentMethod() != null
                         ? paymentRequest.getPaymentMethod() : "ONLINE")
+                .amount(booking.getTotalAmount())
+                .status("SUCCESS")
+                .transactionCode(paymentRequest != null && paymentRequest.getTransactionCode() != null
+                        ? paymentRequest.getTransactionCode() : "PAY" + now.format(CODE_TIME))
+                .createdAt(now)
+                .paidAt(now)
+                .booking(booking)
+                .build();
+        booking.getPayments().add(payment);
+
+        if (booking.getTicket() == null) {
+            booking.setTicket(Ticket.builder()
+                    .ticketCode("TK" + now.format(CODE_TIME) + booking.getId())
+                    .qrCode("QR-" + booking.getBookingCode())
+                    .status("VALID")
+                    .issuedAt(now)
+                    .booking(booking)
+                    .build());
+        } else {
+            booking.getTicket().setStatus("VALID");
+            booking.getTicket().setIssuedAt(now);
+        }
+        Booking saved = bookingRepository.save(booking);
+        notificationService.bookingPaid(saved);
+        return saved;
+    }
+
+    @PutMapping("/{id}/client-pay")
+    @Transactional
+    public Booking clientPay(
+            @PathVariable Long id,
+            @RequestBody(required = false) PaymentRequest paymentRequest,
+            HttpServletRequest request
+    ) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay ve dat"));
+        requireOwnerOrStaffOrAdmin(booking, currentUser(request));
+
+        if (isCancelled(booking)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking da huy khong the thanh toan");
+        }
+        if ("PAID".equalsIgnoreCase(booking.getStatus())) {
+            return booking;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        booking.setStatus("PAID");
+        booking.setPaidAt(now);
+
+        Payment payment = Payment.builder()
+                .paymentMethod(paymentRequest != null && paymentRequest.getPaymentMethod() != null
+                        ? paymentRequest.getPaymentMethod() : "VNPAY_DEMO")
                 .amount(booking.getTotalAmount())
                 .status("SUCCESS")
                 .transactionCode(paymentRequest != null && paymentRequest.getTransactionCode() != null
@@ -510,6 +568,58 @@ public class BookingController {
 
     private BigDecimal value(BigDecimal amount) {
         return amount == null ? BigDecimal.ZERO : amount;
+    }
+
+    private BigDecimal applyPromotionToBooking(Booking booking, BigDecimal orderAmount) {
+        String code = booking.getPromotionCode();
+        if (code == null || code.isBlank()) {
+            booking.setPromotionCode(null);
+            return BigDecimal.ZERO;
+        }
+
+        Promotion promotion = promotionRepository.findByCodeIgnoreCase(code.trim())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ma khuyen mai khong ton tai"));
+        validatePromotionForOrder(promotion, orderAmount);
+
+        BigDecimal discount = calculatePromotionDiscount(promotion, orderAmount);
+        booking.setPromotionCode(promotion.getCode());
+        promotion.setUsedCount((promotion.getUsedCount() == null ? 0 : promotion.getUsedCount()) + 1);
+        promotionRepository.save(promotion);
+        return discount;
+    }
+
+    private void validatePromotionForOrder(Promotion promotion, BigDecimal orderAmount) {
+        LocalDate today = LocalDate.now();
+        if (!"ONLINE".equalsIgnoreCase(promotion.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma khuyen mai khong con hoat dong");
+        }
+        if (today.isBefore(promotion.getStartDate()) || today.isAfter(promotion.getEndDate())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma khuyen mai da het han hoac chua den ngay ap dung");
+        }
+        if (promotion.getUsageLimit() != null && promotion.getUsageLimit() > 0
+                && promotion.getUsedCount() != null
+                && promotion.getUsedCount() >= promotion.getUsageLimit()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ma khuyen mai da het luot su dung");
+        }
+        BigDecimal minOrderAmount = promotion.getMinOrderAmount() == null ? BigDecimal.ZERO : promotion.getMinOrderAmount();
+        if (orderAmount.compareTo(minOrderAmount) < 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Don hang chua dat gia tri toi thieu cua ma khuyen mai");
+        }
+    }
+
+    private BigDecimal calculatePromotionDiscount(Promotion promotion, BigDecimal orderAmount) {
+        BigDecimal discount;
+        if ("FIXED".equalsIgnoreCase(promotion.getDiscountType())) {
+            discount = promotion.getDiscountValue();
+        } else {
+            discount = orderAmount
+                    .multiply(promotion.getDiscountValue())
+                    .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+        }
+        if (promotion.getMaxDiscountAmount() != null && promotion.getMaxDiscountAmount().signum() > 0) {
+            discount = discount.min(promotion.getMaxDiscountAmount());
+        }
+        return discount.min(orderAmount).max(BigDecimal.ZERO);
     }
 
     private void releaseActiveHolds(Long userId, Long showtimeId) {

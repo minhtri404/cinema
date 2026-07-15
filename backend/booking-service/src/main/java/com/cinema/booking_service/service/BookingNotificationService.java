@@ -9,6 +9,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
@@ -34,8 +36,7 @@ public class BookingNotificationService {
                 booking,
                 "BOOKING_PAID",
                 "Vé đã được thanh toán",
-                "Đơn vé #" + booking.getId() + " đã thanh toán thành công. Ghế: " + seatCodes(booking)
-                        + ". Giá trị: " + money(booking.getTotalAmount()) + "."
+                paidTicketContent(booking)
         );
     }
 
@@ -78,6 +79,33 @@ public class BookingNotificationService {
                 .map(BookingSeat::getSeatCode)
                 .filter(code -> code != null && !code.isBlank())
                 .collect(Collectors.joining(", "));
+    }
+
+    private String paidTicketContent(Booking booking) {
+        String ticketCode = booking.getTicket() == null ? "—" : booking.getTicket().getTicketCode();
+        String qrData = booking.getTicket() == null ? booking.getBookingCode() : booking.getTicket().getQrCode();
+        String qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + urlEncode(qrData);
+
+        return String.join("\n",
+                "Thanh toán thành công. Vui lòng đưa mã QR này cho nhân viên để quét vé.",
+                "Mã đặt vé: " + defaultText(booking.getBookingCode()),
+                "Mã vé: " + defaultText(ticketCode),
+                "QR_IMAGE_URL=" + qrImageUrl,
+                "Phim: " + defaultText(booking.getMovieTitle()),
+                "Rạp: " + defaultText(booking.getTheaterName()),
+                "Phòng: " + defaultText(booking.getRoomName()),
+                "Suất chiếu: " + defaultText(String.valueOf(booking.getShowDate())) + " " + defaultText(String.valueOf(booking.getStartTime())),
+                "Ghế: " + seatCodes(booking),
+                "Tổng tiền: " + money(booking.getTotalAmount())
+        );
+    }
+
+    private String defaultText(String value) {
+        return value == null || value.isBlank() || "null".equalsIgnoreCase(value) ? "—" : value;
+    }
+
+    private String urlEncode(String value) {
+        return URLEncoder.encode(defaultText(value), StandardCharsets.UTF_8);
     }
 
     private String money(BigDecimal value) {

@@ -165,9 +165,24 @@ public class EmailTemplateService {
     }
 
     private String formatContent(String value) {
-        return escape(defaultText(value, "Thông tin của bạn đã được cập nhật."))
-                .replace("\r\n", "<br>")
-                .replace("\n", "<br>");
+        String text = defaultText(value, "Thông tin của bạn đã được cập nhật.");
+        StringBuilder html = new StringBuilder();
+        for (String line : text.replace("\r\n", "\n").split("\n")) {
+            if (line.startsWith("QR_IMAGE_URL=")) {
+                String qrUrl = line.substring("QR_IMAGE_URL=".length()).trim();
+                if (!qrUrl.isBlank()) {
+                    html.append("<div style=\"margin:16px 0 4px;text-align:center;\">")
+                            .append("<img src=\"")
+                            .append(escape(qrUrl))
+                            .append("\" alt=\"QR mã vé\" width=\"180\" height=\"180\" style=\"display:inline-block;border:1px solid #e2e8f0;border-radius:14px;padding:10px;background:#fff;\">")
+                            .append("</div>");
+                }
+                continue;
+            }
+            if (!html.isEmpty()) html.append("<br>");
+            html.append(escape(line));
+        }
+        return html.toString();
     }
 
     private String defaultText(String value, String fallback) {

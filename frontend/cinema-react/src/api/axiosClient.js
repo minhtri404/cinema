@@ -7,17 +7,33 @@ const axiosClient = axios.create({
   },
 });
 
-axiosClient.interceptors.request.use((config) => {
-  try {
-    const auth = JSON.parse(localStorage.getItem("auth") || sessionStorage.getItem("auth") || "{}");
-    const token = auth.accessToken || auth.token;
+const readAuthFromStorage = () => {
+  const isAdminPage = window.location.pathname.startsWith("/admin");
+  const keys = isAdminPage ? ["auth"] : ["clientAuth", "auth"];
+  const stores = [localStorage, sessionStorage];
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  for (const store of stores) {
+    for (const key of keys) {
+      const raw = store.getItem(key);
+      if (!raw) continue;
+      try {
+        const auth = JSON.parse(raw);
+        if (auth && typeof auth === "object") return auth;
+      } catch {
+        store.removeItem(key);
+      }
     }
-  } catch {
-    localStorage.removeItem("auth");
-    sessionStorage.removeItem("auth");
+  }
+
+  return {};
+};
+
+axiosClient.interceptors.request.use((config) => {
+  const auth = readAuthFromStorage();
+  const token = auth.accessToken || auth.token || auth.jwtToken || auth.jwt || auth.bearerToken;
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
 
   return config;

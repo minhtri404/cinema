@@ -49,6 +49,9 @@
     container_name: cinema-api-gateway
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: api-gateway
+      EUREKA_INSTANCE_INSTANCE_ID: api-gateway:8080
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
       SPRING_DATA_REDIS_HOST: redis
     ports:
       - "8080:8080"
@@ -70,6 +73,9 @@
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: demo_password_change_me
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: movie-service
+      EUREKA_INSTANCE_INSTANCE_ID: movie-service:8081
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
     ports:
       - "8081:8081"
     depends_on:
@@ -89,6 +95,9 @@
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: demo_password_change_me
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: showtime-service
+      EUREKA_INSTANCE_INSTANCE_ID: showtime-service:8082
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
     ports:
       - "8082:8082"
     depends_on:
@@ -108,6 +117,9 @@
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: demo_password_change_me
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: booking-service
+      EUREKA_INSTANCE_INSTANCE_ID: booking-service:8083
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
       PRODUCT_SERVICE_BASE_URL: http://movie-service
       SPRING_DATA_REDIS_HOST: redis
     ports:
@@ -133,6 +145,9 @@
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: demo_password_change_me
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: user-service
+      EUREKA_INSTANCE_INSTANCE_ID: user-service:8084
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
       SPRING_DATA_REDIS_HOST: redis
     ports:
       - "8084:8084"

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import HomePage from "../pages/client/HomePage";
 import VerifyEmailPage from "../pages/client/VerifyEmailPage";
+import VnpayReturnPage from "../pages/client/VnpayReturnPage";
 import LoginPage from "../pages/auth/LoginPage";
 import AdminDashboardPage from "../pages/admin/dashboard/AdminDashboardPage";
 import AdminLayout from "../layouts/admin/AdminLayout";
@@ -33,6 +34,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/payment/vnpay-return" element={<VnpayReturnPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin" element={withAdminLayout(<AdminDashboardPage />)} />
         <Route path="/admin/movies" element={withAdminLayout(<MovieListPage />)} />

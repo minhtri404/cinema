@@ -52,6 +52,9 @@ public class Booking {
 
     private BigDecimal discountAmount;
 
+    @Column(length = 50)
+    private String promotionCode;
+
     private BigDecimal totalAmount;
 
     private String status;

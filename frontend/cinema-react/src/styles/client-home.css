@@ -2056,6 +2056,91 @@
   background: #ffffff;
 }
 
+.client-home .client-promotion-box,
+.client-home .client-payment-methods {
+  width: min(100%, 920px);
+  border-radius: 4px;
+  background: #d6dce5;
+  padding: 22px 28px;
+}
+
+.client-home .client-promotion-box label {
+  display: block;
+  margin-bottom: 8px;
+  color: #1f2937;
+  font-weight: 800;
+}
+
+.client-home .client-promotion-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.client-home .client-promotion-form input {
+  min-height: 42px;
+  border: 1px solid #9aa4b2;
+  border-radius: 3px;
+  padding: 0 14px;
+  font-size: 15px;
+}
+
+.client-home .client-promotion-form button,
+.client-home .client-payment-methods button {
+  border: 0;
+  border-radius: 4px;
+  background: #e44141;
+  color: #ffffff;
+  font-weight: 800;
+  padding: 0 18px;
+  cursor: pointer;
+}
+
+.client-home .client-promotion-form button.danger {
+  background: #ef4444;
+}
+
+.client-home .client-promotion-message {
+  display: flex;
+  gap: 18px;
+  margin-top: 10px;
+  border-radius: 3px;
+  background: #ffffff;
+  padding: 12px 14px;
+}
+
+.client-home .client-promotion-message.success {
+  color: #15803d;
+}
+
+.client-home .client-promotion-message.error {
+  color: #dc2626;
+}
+
+.client-home .client-payment-methods {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.client-home .client-payment-methods button {
+  min-height: 48px;
+  border: 1px solid #38bdf8;
+  background: #ffffff;
+  color: #334155;
+  text-align: left;
+}
+
+.client-home .client-payment-methods button.active {
+  border-color: #0284c7;
+  box-shadow: inset 4px 0 0 #0284c7;
+}
+
+.client-home .client-payment-methods button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .client-home .client-payment-card div {
   display: flex;
   align-items: center;

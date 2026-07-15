@@ -63,7 +63,7 @@ public class PaymentTransaction {
     private String description;
 
     @Lob
-    @Column(name = "callback_payload")
+    @Column(name = "callback_payload", columnDefinition = "TEXT")
     private String callbackPayload;
 
     @Column(name = "paid_at")

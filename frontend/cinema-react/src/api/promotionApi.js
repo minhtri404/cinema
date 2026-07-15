@@ -3,6 +3,9 @@ import { uploadImage } from "./mediaApi";
 
 export const getPromotions = () => axiosClient.get("/api/promotions");
 
+export const applyPromotion = (data) =>
+  axiosClient.post("/api/promotions/apply", data);
+
 export const createPromotion = (data) =>
   axiosClient.post("/api/promotions", data);
 

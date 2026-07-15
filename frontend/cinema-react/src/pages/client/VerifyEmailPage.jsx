@@ -6,9 +6,7 @@ import "../../styles/client-home.css";
 const saveClientAuth = (auth) => {
   const payload = JSON.stringify(auth);
   localStorage.setItem("clientAuth", payload);
-  localStorage.setItem("auth", payload);
   sessionStorage.removeItem("clientAuth");
-  sessionStorage.removeItem("auth");
 };
 
 const getErrorMessage = (error) => {

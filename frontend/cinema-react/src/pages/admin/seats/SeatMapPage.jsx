@@ -375,7 +375,7 @@ function SeatMapPage() {
           {selectedBookedSeat ? (
             <div className="seat-booking-detail">
               <div className="seat-detail-code booked">{selectedBookedSeat.seatCode}</div>
-              <span className="seat-booking-badge">GHẾ ĐÃ ĐẶT</span>
+              <span className="seat-booking-badge">GHẾ Đ?ĐẶT</span>
               <dl>
                 <div>
                   <dt>Khách hàng</dt>
