@@ -3,6 +3,7 @@ package com.example.user_service.service;
 import com.example.user_service.dto.LoginRequest;
 import com.example.user_service.dto.LoginResponse;
 import com.example.user_service.dto.RegisterRequest;
+import com.example.user_service.dto.EmailVerificationRequest;
 import com.example.user_service.entity.User;
 import com.example.user_service.repository.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -69,10 +70,9 @@ public class AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
-        emailVerificationService.sendActivationEmail(savedUser);
 
         return new LoginResponse(
-                "Dang ky thanh cong. Vui long kiem tra email de kich hoat tai khoan.",
+                "Dang ky thanh cong. Ban co the dang nhap ngay. Vao ho so ca nhan de gui email xac nhan uu dai khi can.",
                 null,
                 null,
                 null,
@@ -95,11 +95,28 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Mat khau khong dung");
         }
 
-        if (requiresEmailVerification(user) && Boolean.FALSE.equals(user.getEmailVerified())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tai khoan chua kich hoat. Vui long kiem tra email.");
+        return issueTokens(user, "Dang nhap thanh cong");
+    }
+
+    public String resendVerificationEmail(EmailVerificationRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email khong duoc de trong");
         }
 
-        return issueTokens(user, "Dang nhap thanh cong");
+        String email = normalizeEmail(request.getEmail());
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Email khong ton tai"));
+
+        if (Boolean.TRUE.equals(user.getEmailVerified())) {
+            return "Email da duoc xac nhan. Tai khoan da du dieu kien nhan uu dai.";
+        }
+
+        user.setEmailVerificationToken(UUID.randomUUID().toString());
+        user.setEmailVerificationTokenExpiresAt(LocalDateTime.now().plusHours(24));
+        User savedUser = userRepository.save(user);
+        emailVerificationService.sendActivationEmail(savedUser);
+
+        return "Da gui email xac nhan uu dai. Vui long kiem tra hop thu hoac muc Spam.";
     }
 
     public LoginResponse verifyEmail(String token) {
@@ -119,7 +136,10 @@ public class AuthService {
         user.setEmailVerificationToken(null);
         user.setEmailVerificationTokenExpiresAt(null);
 
-        return issueTokens(userRepository.save(user), "Kich hoat tai khoan thanh cong");
+        User savedUser = userRepository.save(user);
+        emailVerificationService.sendMemberPromotionEmail(savedUser);
+
+        return issueTokens(savedUser, "Xac nhan email thanh cong. Ma uu dai MEMBER20 da duoc gui qua email.");
     }
 
     public LoginResponse refresh(String refreshToken) {
@@ -186,10 +206,6 @@ public class AuthService {
 
     private String refreshKey(String refreshToken) {
         return REFRESH_PREFIX + refreshToken;
-    }
-
-    private boolean requiresEmailVerification(User user) {
-        return "CUSTOMER".equalsIgnoreCase(user.getRole()) || "USER".equalsIgnoreCase(user.getRole());
     }
 
     private String normalizeRequired(String value, String message) {

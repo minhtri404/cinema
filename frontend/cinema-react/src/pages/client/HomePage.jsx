@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAdvertisements } from "../../api/advertisementApi";
-import { loginUser, logoutUser, registerUser } from "../../api/authApi";
+import { loginUser, logoutUser, registerUser, resendVerificationEmail } from "../../api/authApi";
+import { createBooking, getBookedSeats, getSeatLocks, holdBookingSeats } from "../../api/bookingApi";
+import { getFoods } from "../../api/foodApi";
 import { getMovies } from "../../api/movieApi";
+import { getSeatsByRoom } from "../../api/seatApi";
+import { getShowtimes } from "../../api/showtimeApi";
+import { getTheaters } from "../../api/theaterApi";
 import "../../styles/client-home.css";
 
 const fallbackBanners = [
@@ -75,16 +80,52 @@ const initialRegisterForm = {
   confirmPassword: "",
 };
 
+const initialMovieFilters = {
+  actor: "",
+  director: "",
+  genres: [],
+  ageRating: "",
+};
+
+const toDateInputValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const parseLocalDate = (value) => {
+  if (!value) return new Date();
+  const [year, month, day] = String(value).split("-").map(Number);
+  if (!year || !month || !day) return new Date(value);
+  return new Date(year, month - 1, day);
+};
+
+const buildScheduleDates = (startDate = new Date(), total = 8) =>
+  Array.from({ length: total }, (_, index) => {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + index);
+    const value = toDateInputValue(date);
+    return {
+      value,
+      label: `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`,
+    };
+  });
+
+const formatShowtimeTime = (value) => String(value || "").slice(0, 5);
+
 const formatDuration = (duration) => {
   if (!duration) return "Đang cập nhật";
   return `${duration} phút`;
 };
 
-const isAdvanceMovie = (movie) => {
-  const status = String(movie.status || "").toUpperCase();
-  if (status.includes("COMING")) return true;
-  if (!movie.releaseDate) return false;
-  return new Date(movie.releaseDate).getTime() > Date.now();
+const getMovieStatus = (movie) => String(movie.status || "").trim().toUpperCase();
+
+const movieMatchesTab = (movie, tab) => {
+  const status = getMovieStatus(movie);
+  if (tab === "coming") return status === "COMING_SOON";
+  if (tab === "advance") return status === "ADVANCE_BOOKING" || status === "PRE_SALE";
+  return status === "NOW_SHOWING" || status === "ACTIVE" || !status;
 };
 
 const getPoster = (movie) => {
@@ -95,9 +136,101 @@ const getPoster = (movie) => {
   return value;
 };
 
-const getAgeRating = (movie) => movie.ageRating || movie.rating || movie.ageLimit || "C16";
+const getTrailerUrl = (movie) => movie.trailerUrl || movie.trailer || movie.videoUrl || "";
 
-const getAgeNumber = (rating) => String(rating).replace(/\D/g, "") || "16";
+const getTrailerEmbedUrl = (movie) => {
+  const value = String(getTrailerUrl(movie) || "").trim();
+  if (!value) return "";
+
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./, "");
+
+    if (host === "youtu.be") {
+      const videoId = url.pathname.split("/").filter(Boolean)[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
+    }
+
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      if (url.pathname.startsWith("/embed/")) return value;
+      if (url.pathname.startsWith("/shorts/")) {
+        const videoId = url.pathname.split("/").filter(Boolean)[1];
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
+      }
+      const videoId = url.searchParams.get("v");
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
+    }
+
+    return value;
+  } catch {
+    return "";
+  }
+};
+
+const getAgeRating = (movie) =>
+  movie.ageRating || movie.rating || movie.ageLimit || "Đang cập nhật";
+
+const ageRatingDescriptions = {
+  P: "PHIM PHÙ HỢP VỚI MỌI ĐỘ TUỔI",
+  K: "PHIM DÀNH CHO KHÁN GIẢ DƯỚI 13 TUỔI KHI CÓ NGƯỜI GIÁM HỘ",
+  C13: "PHIM ĐƯỢC PHỔ BIẾN ĐẾN NGƯỜI XEM TỪ ĐỦ 13 TUỔI TRỞ LÊN (13+)",
+  C16: "PHIM ĐƯỢC PHỔ BIẾN ĐẾN NGƯỜI XEM TỪ ĐỦ 16 TUỔI TRỞ LÊN (16+)",
+  C18: "PHIM ĐƯỢC PHỔ BIẾN ĐẾN NGƯỜI XEM TỪ ĐỦ 18 TUỔI TRỞ LÊN (18+)",
+};
+
+const getAgeDescription = (rating) => {
+  const normalizedRating = String(rating || "").trim().toUpperCase();
+  if (ageRatingDescriptions[normalizedRating]) return ageRatingDescriptions[normalizedRating];
+
+  const ageNumber = normalizedRating.replace(/\D/g, "");
+  if (ageNumber) {
+    return `PHIM ĐƯỢC PHỔ BIẾN ĐẾN NGƯỜI XEM TỪ ĐỦ ${ageNumber} TUỔI TRỞ LÊN (${ageNumber}+)`;
+  }
+
+  return "ĐANG CẬP NHẬT PHÂN LOẠI ĐỘ TUỔI";
+};
+
+const normalizeSearchValue = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+const splitGenres = (genre) =>
+  String(genre || "")
+    .split(/[|,;/]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const hasActiveFilters = (filters) =>
+  Boolean(
+    filters.actor.trim() ||
+      filters.director.trim() ||
+      filters.ageRating ||
+      filters.genres.length > 0,
+  );
+
+const movieMatchesFilters = (movie, filters) => {
+  const actorKeyword = normalizeSearchValue(filters.actor);
+  const directorKeyword = normalizeSearchValue(filters.director);
+  const movieActors = normalizeSearchValue(movie.cast || movie.actors || movie.actorNames);
+  const movieDirector = normalizeSearchValue(movie.director);
+  const movieRating = normalizeSearchValue(getAgeRating(movie));
+  const movieGenres = splitGenres(movie.genre).map(normalizeSearchValue);
+
+  if (actorKeyword && !movieActors.includes(actorKeyword)) return false;
+  if (directorKeyword && !movieDirector.includes(directorKeyword)) return false;
+  if (filters.ageRating && movieRating !== normalizeSearchValue(filters.ageRating)) return false;
+  if (
+    filters.genres.length > 0 &&
+    !filters.genres.every((genre) => movieGenres.includes(normalizeSearchValue(genre)))
+  ) {
+    return false;
+  }
+
+  return true;
+};
 
 const readClientAuth = () => {
   try {
@@ -139,10 +272,51 @@ const errorMessage = (error, fallback) => {
   return data?.message || fallback;
 };
 
+const BOOKING_HOLD_SECONDS = 10 * 60;
+
+const formatHoldTime = (seconds) => {
+  const safeSeconds = Math.max(0, Number(seconds || 0));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+};
+
+const formatMoney = (value) => `${Number(value || 0).toLocaleString("vi-VN")} đ`;
+
+const seatPrice = (seat) => {
+  const type = String(seat.seatType || "").toUpperCase();
+  if (type.includes("COUPLE")) return 115000 + Number(seat.extraPrice || 0);
+  if (type.includes("VIP")) return 105000 + Number(seat.extraPrice || 0);
+  return 85000 + Number(seat.extraPrice || 0);
+};
+
+const groupSeatsByRow = (seats) => {
+  const groups = new Map();
+  seats
+    .slice()
+    .sort((a, b) => {
+      const rowCompare = String(a.seatRow || a.seatCode || "").localeCompare(String(b.seatRow || b.seatCode || ""));
+      if (rowCompare !== 0) return rowCompare;
+      return Number(a.seatNumber || 0) - Number(b.seatNumber || 0);
+    })
+    .forEach((seat) => {
+      const row = seat.seatRow || String(seat.seatCode || "?").replace(/[0-9]/g, "") || "?";
+      if (!groups.has(row)) groups.set(row, []);
+      groups.get(row).push(seat);
+    });
+  return Array.from(groups.entries()).map(([row, rowSeats]) => ({ row, seats: rowSeats }));
+};
+
 function HomePage() {
   const [movies, setMovies] = useState([]);
   const [banners, setBanners] = useState([]);
+  const [showtimes, setShowtimes] = useState([]);
+  const [theaters, setTheaters] = useState([]);
   const [activeTab, setActiveTab] = useState("now");
+  const [scheduleMode, setScheduleMode] = useState("movie");
+  const [selectedScheduleMovieId, setSelectedScheduleMovieId] = useState(null);
+  const [selectedScheduleTheaterId, setSelectedScheduleTheaterId] = useState(null);
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState(() => toDateInputValue(new Date()));
   const [bannerIndex, setBannerIndex] = useState(0);
   const [auth, setAuth] = useState(readClientAuth);
   const [view, setView] = useState("home");
@@ -152,11 +326,31 @@ function HomePage() {
   const [authError, setAuthError] = useState("");
   const [authInfo, setAuthInfo] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  const [verificationSending, setVerificationSending] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [detailScheduleDate, setDetailScheduleDate] = useState(() => toDateInputValue(new Date()));
+  const [draftFilters, setDraftFilters] = useState(initialMovieFilters);
+  const [appliedFilters, setAppliedFilters] = useState(initialMovieFilters);
+  const [bookingShowtime, setBookingShowtime] = useState(null);
+  const [bookingMovie, setBookingMovie] = useState(null);
+  const [bookingSeats, setBookingSeats] = useState([]);
+  const [bookedSeatIds, setBookedSeatIds] = useState(new Set());
+  const [ownHeldSeatIds, setOwnHeldSeatIds] = useState(new Set());
+  const [selectedBookingSeats, setSelectedBookingSeats] = useState([]);
+  const [bookingCombos, setBookingCombos] = useState([]);
+  const [bookingComboQuantities, setBookingComboQuantities] = useState({});
+  const [bookingStep, setBookingStep] = useState(1);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState("");
+  const [bookingHoldExpiresAt, setBookingHoldExpiresAt] = useState(null);
+  const [bookingHoldSeconds, setBookingHoldSeconds] = useState(BOOKING_HOLD_SECONDS);
 
   useEffect(() => {
     let active = true;
 
-    Promise.allSettled([getMovies(), getAdvertisements()]).then(([movieResult, adResult]) => {
+    Promise.allSettled([getMovies(), getAdvertisements(), getShowtimes(), getTheaters()]).then(([movieResult, adResult, showtimeResult, theaterResult]) => {
       if (!active) return;
 
       if (movieResult.status === "fulfilled") {
@@ -172,6 +366,14 @@ function HomePage() {
         );
         setBanners(onlineHomeBanners);
       }
+
+      if (showtimeResult.status === "fulfilled") {
+        setShowtimes(showtimeResult.value.data || []);
+      }
+
+      if (theaterResult.status === "fulfilled") {
+        setTheaters(theaterResult.value.data || []);
+      }
     });
 
     return () => {
@@ -182,14 +384,137 @@ function HomePage() {
   const displayBanners = banners.length > 0 ? banners : fallbackBanners;
   const currentBanner = displayBanners[bannerIndex % displayBanners.length];
   const displayMovies = movies.length > 0 ? movies : fallbackMovies;
+  const theaterMap = useMemo(() => {
+    const map = new Map();
+    theaters.forEach((theater) => {
+      map.set(Number(theater.id), theater);
+    });
+    return map;
+  }, [theaters]);
+  const activeShowtimes = useMemo(
+    () =>
+      showtimes.filter((showtime) => {
+        const status = String(showtime.status || "").toUpperCase();
+        return status !== "OFFLINE" && status !== "CANCELLED";
+      }),
+    [showtimes],
+  );
+  const scheduleMovieIds = useMemo(
+    () => new Set(activeShowtimes.map((showtime) => Number(showtime.movieId)).filter(Boolean)),
+    [activeShowtimes],
+  );
+  const scheduleMovies = useMemo(
+    () => displayMovies.filter((movie) => scheduleMovieIds.has(Number(movie.id))),
+    [displayMovies, scheduleMovieIds],
+  );
+  const scheduleTheaterIds = useMemo(
+    () => new Set(activeShowtimes.map((showtime) => Number(showtime.theaterId)).filter(Boolean)),
+    [activeShowtimes],
+  );
+  const scheduleTheaters = useMemo(
+    () => theaters.filter((theater) => scheduleTheaterIds.has(Number(theater.id))),
+    [scheduleTheaterIds, theaters],
+  );
+  const selectedScheduleMovie =
+    scheduleMovies.find((movie) => Number(movie.id) === Number(selectedScheduleMovieId)) ||
+    scheduleMovies[0] ||
+    null;
+  const selectedScheduleTheater =
+    scheduleTheaters.find((theater) => Number(theater.id) === Number(selectedScheduleTheaterId)) ||
+    scheduleTheaters[0] ||
+    null;
+  const hasScheduleData = activeShowtimes.length > 0;
+  const hasSelectedScheduleTarget =
+    scheduleMode === "movie" ? Boolean(selectedScheduleMovie) : Boolean(selectedScheduleTheater);
+  const selectedTargetShowtimeDates = useMemo(() => {
+    const targetShowtimes =
+      scheduleMode === "movie"
+        ? activeShowtimes.filter((showtime) => Number(showtime.movieId) === Number(selectedScheduleMovie?.id))
+        : activeShowtimes.filter((showtime) => Number(showtime.theaterId) === Number(selectedScheduleTheater?.id));
+
+    return Array.from(new Set(targetShowtimes.map((showtime) => showtime.showDate).filter(Boolean))).sort();
+  }, [activeShowtimes, scheduleMode, selectedScheduleMovie, selectedScheduleTheater]);
+  const scheduleDates = useMemo(() => {
+    const today = toDateInputValue(new Date());
+    const firstDateWithShowtime =
+      selectedTargetShowtimeDates.find((date) => date >= today) || selectedTargetShowtimeDates[0];
+    return buildScheduleDates(parseLocalDate(firstDateWithShowtime || today), 8);
+  }, [selectedTargetShowtimeDates]);
+
+  useEffect(() => {
+    if (selectedTargetShowtimeDates.length === 0) return;
+    if (selectedTargetShowtimeDates.includes(selectedScheduleDate)) return;
+
+    const today = toDateInputValue(new Date());
+    const nextDate = selectedTargetShowtimeDates.find((date) => date >= today) || selectedTargetShowtimeDates[0];
+    if (nextDate && nextDate !== selectedScheduleDate) {
+      setSelectedScheduleDate(nextDate);
+    }
+  }, [selectedScheduleDate, selectedTargetShowtimeDates]);
+
+  const selectedMovieShowtimes = useMemo(() => {
+    if (!selectedScheduleMovie) return [];
+    return activeShowtimes.filter(
+      (showtime) =>
+        Number(showtime.movieId) === Number(selectedScheduleMovie.id) &&
+        showtime.showDate === selectedScheduleDate,
+    );
+  }, [activeShowtimes, selectedScheduleDate, selectedScheduleMovie]);
+  const selectedTheaterShowtimes = useMemo(() => {
+    if (!selectedScheduleTheater) return [];
+    return activeShowtimes.filter(
+      (showtime) =>
+        Number(showtime.theaterId) === Number(selectedScheduleTheater.id) &&
+        showtime.showDate === selectedScheduleDate,
+    );
+  }, [activeShowtimes, selectedScheduleDate, selectedScheduleTheater]);
+  const visibleScheduleShowtimes =
+    scheduleMode === "movie" ? selectedMovieShowtimes : selectedTheaterShowtimes;
+  const scheduleGroups = useMemo(() => {
+    const groups = new Map();
+    visibleScheduleShowtimes.forEach((showtime) => {
+      const key =
+        scheduleMode === "movie"
+          ? `${showtime.theaterId}-${showtime.formatType || "2D"}`
+          : `${showtime.movieId}-${showtime.formatType || "2D"}`;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          theater: theaterMap.get(Number(showtime.theaterId)),
+          movie: displayMovies.find((movie) => Number(movie.id) === Number(showtime.movieId)),
+          formatType: showtime.formatType || "2D",
+          times: [],
+        });
+      }
+      groups.get(key).times.push(showtime);
+    });
+
+    return Array.from(groups.values()).map((group) => ({
+      ...group,
+      times: group.times.sort((a, b) => String(a.startTime).localeCompare(String(b.startTime))),
+    }));
+  }, [displayMovies, scheduleMode, theaterMap, visibleScheduleShowtimes]);
+  const availableGenres = useMemo(() => {
+    const uniqueGenres = new Map();
+    displayMovies.forEach((movie) => {
+      splitGenres(movie.genre).forEach((genre) => {
+        uniqueGenres.set(normalizeSearchValue(genre), genre);
+      });
+    });
+    return Array.from(uniqueGenres.values()).sort((a, b) => a.localeCompare(b, "vi"));
+  }, [displayMovies]);
+  const activeFilterCount =
+    Number(Boolean(appliedFilters.actor.trim())) +
+    Number(Boolean(appliedFilters.director.trim())) +
+    Number(Boolean(appliedFilters.ageRating)) +
+    appliedFilters.genres.length;
 
   const filteredMovies = useMemo(() => {
-    const list =
-      activeTab === "now"
-        ? displayMovies.filter((movie) => !isAdvanceMovie(movie))
-        : displayMovies.filter(isAdvanceMovie);
-    return list.length > 0 ? list : displayMovies.slice(0, 6);
-  }, [activeTab, displayMovies]);
+    const tabMovies = displayMovies.filter((movie) => movieMatchesTab(movie, activeTab));
+    const baseMovies =
+      tabMovies.length > 0 || hasActiveFilters(appliedFilters) ? tabMovies : [];
+    return baseMovies.filter((movie) => movieMatchesFilters(movie, appliedFilters));
+  }, [activeTab, appliedFilters, displayMovies]);
 
   const memberCode = useMemo(() => {
     const source = `${auth?.userId || ""}${auth?.fullName || ""}${auth?.email || ""}`;
@@ -199,6 +524,71 @@ function HomePage() {
     }
     return String(900000000000000 + hash).slice(0, 15);
   }, [auth]);
+
+  const bookingTheater = bookingShowtime ? theaterMap.get(Number(bookingShowtime.theaterId)) : null;
+  const bookingSeatRows = useMemo(() => groupSeatsByRow(bookingSeats), [bookingSeats]);
+  const selectedBookingCombos = useMemo(
+    () =>
+      bookingCombos
+        .map((combo) => ({
+          ...combo,
+          quantity: Number(bookingComboQuantities[combo.id] || 0),
+        }))
+        .filter((combo) => combo.quantity > 0),
+    [bookingComboQuantities, bookingCombos],
+  );
+  const bookingTicketTotal = selectedBookingSeats.reduce((sum, seat) => sum + seatPrice(seat), 0);
+  const bookingComboTotal = selectedBookingCombos.reduce(
+    (sum, combo) => sum + Number(combo.price || 0) * combo.quantity,
+    0,
+  );
+  const bookingTotal = bookingTicketTotal + bookingComboTotal;
+
+  useEffect(() => {
+    if (view !== "booking" || !bookingHoldExpiresAt) return undefined;
+
+    const tick = () => {
+      const remainingSeconds = Math.max(0, Math.ceil((bookingHoldExpiresAt - Date.now()) / 1000));
+      setBookingHoldSeconds(remainingSeconds);
+
+      if (remainingSeconds <= 0) {
+        if (bookingShowtime?.id && auth) {
+          holdBookingSeats({ showtimeId: bookingShowtime.id, seats: [] })
+            .then(() => refreshBookedSeatIds(bookingShowtime.id))
+            .catch(() => {});
+        }
+        setSelectedBookingSeats([]);
+        setBookingComboQuantities({});
+        setBookingStep(1);
+        setBookingHoldExpiresAt(null);
+        setBookingError("Hết thời gian giữ ghế. Vui lòng chọn lại ghế.");
+      }
+    };
+
+    tick();
+    const intervalId = window.setInterval(tick, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [auth, bookingHoldExpiresAt, bookingShowtime, view]);
+
+  useEffect(() => {
+    if (view !== "booking" || !bookingShowtime?.id) return undefined;
+
+    let active = true;
+    const refresh = () => {
+      refreshBookedSeatIds(bookingShowtime.id)
+        .then(() => {
+          if (!active) return;
+        })
+        .catch(() => {});
+    };
+
+    refresh();
+    const intervalId = window.setInterval(refresh, 5000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [bookingShowtime?.id, view]);
 
   const changeBanner = (direction) => {
     setBannerIndex((current) => {
@@ -219,6 +609,299 @@ function HomePage() {
     setAuthMode(null);
     setAuthError("");
     setAuthInfo("");
+  };
+
+  const openFilterPanel = () => {
+    setDraftFilters(appliedFilters);
+    setFilterOpen(true);
+    setView("home");
+  };
+
+  const closeFilterPanel = () => {
+    setFilterOpen(false);
+  };
+
+  const updateDraftFilter = (field, value) => {
+    setDraftFilters((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const toggleDraftGenre = (genre) => {
+    setDraftFilters((current) => {
+      const selected = current.genres.includes(genre);
+      return {
+        ...current,
+        genres: selected
+          ? current.genres.filter((item) => item !== genre)
+          : [...current.genres, genre],
+      };
+    });
+  };
+
+  const applyMovieFilters = (event) => {
+    event.preventDefault();
+    setAppliedFilters({
+      actor: draftFilters.actor.trim(),
+      director: draftFilters.director.trim(),
+      genres: draftFilters.genres,
+      ageRating: draftFilters.ageRating,
+    });
+    setFilterOpen(false);
+    setView("home");
+  };
+
+  const resetMovieFilters = () => {
+    setDraftFilters(initialMovieFilters);
+    setAppliedFilters(initialMovieFilters);
+  };
+
+  const openMovieDetail = (movie) => {
+    const movieDates = Array.from(
+      new Set(
+        activeShowtimes
+          .filter((showtime) => Number(showtime.movieId) === Number(movie.id))
+          .map((showtime) => showtime.showDate)
+          .filter(Boolean),
+      ),
+    ).sort();
+    const today = toDateInputValue(new Date());
+    const firstDate = movieDates.find((date) => date >= today) || movieDates[0] || today;
+
+    setSelectedMovie(movie);
+    setDetailScheduleDate(firstDate);
+    setView("movieDetail");
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
+  };
+
+  const openBookingFlow = async (showtime, movieArg) => {
+    const movie =
+      movieArg ||
+      displayMovies.find((item) => Number(item.id) === Number(showtime.movieId)) ||
+      selectedScheduleMovie ||
+      selectedMovie;
+
+    setBookingShowtime(showtime);
+    setBookingMovie(movie || null);
+    if (movie) {
+      setSelectedMovie(movie);
+      setDetailScheduleDate(showtime.showDate || toDateInputValue(new Date()));
+    }
+    setBookingStep(1);
+    setBookingSeats([]);
+    setBookedSeatIds(new Set());
+    setOwnHeldSeatIds(new Set());
+    setSelectedBookingSeats([]);
+    setBookingCombos([]);
+    setBookingComboQuantities({});
+    setBookingError("");
+    setBookingHoldExpiresAt(null);
+    setBookingHoldSeconds(BOOKING_HOLD_SECONDS);
+    setView("booking");
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
+
+    try {
+      setBookingLoading(true);
+      const [seatResult, bookedResult, foodResult] = await Promise.allSettled([
+        getSeatsByRoom(showtime.roomId),
+        auth ? getSeatLocks(showtime.id) : getBookedSeats(showtime.id),
+        getFoods(),
+      ]);
+
+      if (seatResult.status === "fulfilled") {
+        setBookingSeats(seatResult.value.data || []);
+      }
+
+      if (bookedResult.status === "fulfilled") {
+        applySeatLocks(bookedResult.value.data || []);
+      }
+
+      if (foodResult.status === "fulfilled") {
+        setBookingCombos(
+          (foodResult.value.data || []).filter((food) => {
+            const status = String(food.status || "").toUpperCase();
+            const category = String(food.category || "").toUpperCase();
+            return status !== "INACTIVE" && status !== "OUT_OF_STOCK" && (category === "COMBO" || food.name?.toLowerCase().includes("combo"));
+          }),
+        );
+      }
+
+      if (seatResult.status === "rejected") {
+        setBookingError("Không tải được sơ đồ ghế. Kiểm tra lại showtime/room hoặc API ghế.");
+      }
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  const applySeatLocks = (seatLocks) => {
+    const lockedIds = new Set();
+    const ownIds = new Set();
+
+    (seatLocks || []).forEach((seat) => {
+      const seatId = seat.seatId || seat.id;
+      if (!seatId) return;
+      const normalizedSeatId = String(seatId);
+      lockedIds.add(normalizedSeatId);
+      if (seat.heldByCurrentUser === true) {
+        ownIds.add(normalizedSeatId);
+      }
+    });
+
+    setBookedSeatIds(lockedIds);
+    setOwnHeldSeatIds(ownIds);
+  };
+
+  const refreshBookedSeatIds = async (showtimeId) => {
+    const response = auth ? await getSeatLocks(showtimeId) : await getBookedSeats(showtimeId);
+    applySeatLocks(response.data || []);
+  };
+
+  const refreshPublicBookedSeatIds = async (showtimeId) => {
+    const response = await getBookedSeats(showtimeId);
+    setBookedSeatIds(
+      new Set(
+        (response.data || [])
+          .map((seat) => seat.seatId || seat.id)
+          .filter(Boolean)
+          .map(String),
+      ),
+    );
+    setOwnHeldSeatIds(new Set());
+  };
+
+  const buildSeatHoldPayload = (seats) => {
+    const bookingTheater =
+      theaters.find((theater) => Number(theater.id) === Number(bookingShowtime?.theaterId)) || {};
+
+    return {
+      showtimeId: bookingShowtime?.id,
+      movieTitle: bookingMovie?.title || bookingShowtime?.movieTitle || bookingMovie?.name,
+      theaterName: bookingTheater?.name || bookingShowtime?.theaterName || `Rạp #${bookingShowtime?.theaterId}`,
+      roomName: bookingShowtime?.roomName || `Phòng #${bookingShowtime?.roomId}`,
+      showDate: bookingShowtime?.showDate,
+      startTime: bookingShowtime?.startTime,
+      seats: seats.map((seat) => ({
+        seatId: seat.id,
+        seatCode: seat.seatCode,
+        seatType: seat.seatType || "STANDARD",
+        price: seatPrice(seat),
+      })),
+    };
+  };
+
+  const syncSeatHold = async (nextSeats, previousSeats) => {
+    if (!bookingShowtime || !auth) return;
+
+    try {
+      await holdBookingSeats(buildSeatHoldPayload(nextSeats));
+      await refreshBookedSeatIds(bookingShowtime.id);
+    } catch (error) {
+      setSelectedBookingSeats(previousSeats);
+      if (previousSeats.length === 0) {
+        setBookingHoldExpiresAt(null);
+        setBookingHoldSeconds(BOOKING_HOLD_SECONDS);
+      }
+      await refreshBookedSeatIds(bookingShowtime.id).catch(() => {});
+      setBookingError(errorMessage(error, "Ghế này vừa được người khác giữ. Vui lòng chọn ghế khác."));
+    }
+  };
+
+  const updateSeatHoldTimer = (previousSeats, nextSeats) => {
+    if (previousSeats.length === 0 && nextSeats.length > 0) {
+      setBookingHoldExpiresAt(Date.now() + BOOKING_HOLD_SECONDS * 1000);
+      setBookingHoldSeconds(BOOKING_HOLD_SECONDS);
+      setBookingError("");
+    }
+
+    if (nextSeats.length === 0) {
+      setBookingHoldExpiresAt(null);
+      setBookingHoldSeconds(BOOKING_HOLD_SECONDS);
+      setBookingComboQuantities({});
+      setBookingStep(1);
+    }
+  };
+
+  const toggleBookingSeat = (seat) => {
+    if (!auth) {
+      openAuthModal("login");
+      return;
+    }
+
+    const selected = selectedBookingSeats.some((item) => Number(item.id) === Number(seat.id));
+    const sold = bookedSeatIds.has(String(seat.id)) && !ownHeldSeatIds.has(String(seat.id));
+    const status = String(seat.status || "ACTIVE").toUpperCase();
+    if ((sold && !selected) || (status && status !== "ACTIVE")) return;
+
+    const previousSeats = selectedBookingSeats;
+    const nextSeats = selected
+      ? previousSeats.filter((item) => Number(item.id) !== Number(seat.id))
+      : [...previousSeats, seat];
+
+    setSelectedBookingSeats(nextSeats);
+    updateSeatHoldTimer(previousSeats, nextSeats);
+    syncSeatHold(nextSeats, previousSeats);
+  };
+
+  const updateBookingComboQuantity = (comboId, delta) => {
+    setBookingComboQuantities((current) => {
+      const nextValue = Math.max(0, Number(current[comboId] || 0) + delta);
+      return {
+        ...current,
+        [comboId]: nextValue,
+      };
+    });
+  };
+
+  const buildClientBookingPayload = () => ({
+    userId: auth?.userId || auth?.id,
+    customerName: auth?.fullName || "Khách hàng online",
+    customerEmail: auth?.email || null,
+    customerPhone: auth?.phone || null,
+    showtimeId: bookingShowtime.id,
+    movieTitle: bookingMovie?.title || bookingShowtime.movieName,
+    theaterName: bookingTheater?.name || `Rạp #${bookingShowtime.theaterId}`,
+    roomName: bookingShowtime.roomName || `Phòng #${bookingShowtime.roomId}`,
+    showDate: bookingShowtime.showDate,
+    startTime: bookingShowtime.startTime,
+    discountAmount: 0,
+    seats: selectedBookingSeats.map((seat) => ({
+      seatId: seat.id,
+      seatCode: seat.seatCode,
+      seatType: seat.seatType || "STANDARD",
+      price: seatPrice(seat),
+    })),
+    foods: selectedBookingCombos.map((combo) => ({
+      foodId: combo.id,
+      foodName: combo.name,
+      quantity: combo.quantity,
+      unitPrice: Number(combo.price || 0),
+      totalPrice: Number(combo.price || 0) * combo.quantity,
+    })),
+  });
+
+  const submitClientBooking = async () => {
+    if (!auth) {
+      openAuthModal("login");
+      return;
+    }
+    if (!bookingShowtime || selectedBookingSeats.length === 0) {
+      setBookingError("Vui lòng chọn ít nhất một ghế.");
+      return;
+    }
+
+    try {
+      setBookingLoading(true);
+      setBookingError("");
+      const response = await createBooking(buildClientBookingPayload());
+      alert(`Đặt vé thành công. Mã đặt vé: ${response.data?.bookingCode || response.data?.id}`);
+      await openBookingFlow(bookingShowtime, bookingMovie);
+    } catch (error) {
+      setBookingError(errorMessage(error, "Đặt vé thất bại."));
+    } finally {
+      setBookingLoading(false);
+    }
   };
 
   const handleLogin = async (event) => {
@@ -244,7 +927,7 @@ function HomePage() {
       saveClientAuth(nextAuth, loginForm.remember);
       setAuth(nextAuth);
       setAuthMode(null);
-      setView("account");
+      setView((currentView) => (currentView === "booking" ? "booking" : "account"));
     } catch (error) {
       setAuthError(errorMessage(error, "Đăng nhập thất bại."));
     } finally {
@@ -285,7 +968,7 @@ function HomePage() {
       setRegisterForm(initialRegisterForm);
       setAuthInfo(
         response.data?.message ||
-          "Đăng ký thành công. Vui lòng kiểm tra email và bấm link kích hoạt để xác nhận thành viên.",
+          "Đăng ký thành công. Bạn có thể đăng nhập ngay. Vào hồ sơ cá nhân để gửi email xác nhận ưu đãi khi cần.",
       );
     } catch (error) {
       setAuthError(errorMessage(error, "Đăng ký thất bại."));
@@ -305,6 +988,28 @@ function HomePage() {
       clearClientAuth();
       setAuth(null);
       setView("home");
+    }
+  };
+
+  const handleResendVerificationEmail = async () => {
+    if (!auth?.email) {
+      setVerificationMessage("Không tìm thấy email tài khoản.");
+      return;
+    }
+
+    try {
+      setVerificationSending(true);
+      setVerificationMessage("");
+      const response = await resendVerificationEmail(auth.email);
+      setVerificationMessage(
+        typeof response.data === "string"
+          ? response.data
+          : response.data?.message || "Đã gửi email xác nhận ưu đãi. Vui lòng kiểm tra hộp thư.",
+      );
+    } catch (error) {
+      setVerificationMessage(errorMessage(error, "Không gửi được email xác nhận. Vui lòng thử lại sau."));
+    } finally {
+      setVerificationSending(false);
     }
   };
 
@@ -343,16 +1048,34 @@ function HomePage() {
           >
             Vé Bán Trước
           </button>
-          <button type="button" className="filter-toggle">
+          <button type="button" className="filter-toggle" onClick={openFilterPanel}>
             <span aria-hidden="true">▼</span> Bộ lọc
+            {activeFilterCount > 0 && <strong>{activeFilterCount}</strong>}
           </button>
         </div>
 
         <div className="client-movie-grid">
-          {filteredMovies.map((movie) => {
+          {filteredMovies.length === 0 ? (
+            <div className="movie-filter-empty">
+              Không có phim phù hợp với bộ lọc hiện tại.
+            </div>
+          ) : (
+            filteredMovies.map((movie) => {
             const rating = getAgeRating(movie);
             return (
-              <article className="client-movie-card" key={movie.id}>
+              <article
+                className="client-movie-card"
+                key={movie.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => openMovieDetail(movie)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openMovieDetail(movie);
+                  }
+                }}
+              >
                 <div className="movie-poster">
                   {getPoster(movie) ? <img src={getPoster(movie)} alt={movie.title} /> : <span>No Image</span>}
                 </div>
@@ -366,19 +1089,155 @@ function HomePage() {
                   <p>Đạo diễn: {movie.director || "Đang cập nhật"}</p>
                   <p>Diễn viên: {movie.cast || movie.actors || "Đang cập nhật"}</p>
                   <p className="movie-rating">
-                    Rated: <span>{rating}</span> - PHIM ĐƯỢC PHỔ BIẾN ĐẾN NGƯỜI XEM TỪ ĐỦ{" "}
-                    {getAgeNumber(rating)} TUỔI TRỞ LÊN ({getAgeNumber(rating)}+)
+                    Rated: <span>{rating}</span> - {getAgeDescription(rating)}
                   </p>
                 </div>
               </article>
             );
-          })}
+          }))}
         </div>
       </section>
 
-      <section className="client-placeholder" id="schedule">
-        <h2>Lịch chiếu phim</h2>
-        <p>Chọn phim và suất chiếu để đặt vé nhanh tại HMCinema.</p>
+      <section className="client-schedule" id="schedule">
+        <div className="schedule-tabs">
+          <button
+            type="button"
+            className={scheduleMode === "movie" ? "active" : ""}
+            onClick={() => setScheduleMode("movie")}
+          >
+            Lịch chiếu theo phim
+          </button>
+          <button
+            type="button"
+            className={scheduleMode === "theater" ? "active" : ""}
+            onClick={() => setScheduleMode("theater")}
+          >
+            Lịch chiếu theo rạp
+          </button>
+        </div>
+
+        {!hasScheduleData ? (
+          <div className="schedule-empty">Chưa có lịch chiếu từ hệ thống.</div>
+        ) : scheduleMode === "movie" ? (
+          <>
+            <div className="schedule-movie-strip">
+              {scheduleMovies.map((movie) => (
+                <button
+                  key={movie.id}
+                  type="button"
+                  className={Number(selectedScheduleMovie?.id) === Number(movie.id) ? "active" : ""}
+                  onClick={() => setSelectedScheduleMovieId(movie.id)}
+                >
+                  {getPoster(movie) ? <img src={getPoster(movie)} alt={movie.title} /> : <span>No Image</span>}
+                </button>
+              ))}
+            </div>
+
+            {selectedScheduleMovie && (
+              <div className="schedule-movie-detail">
+                <div className="schedule-detail-poster">
+                  {getPoster(selectedScheduleMovie) ? (
+                    <img src={getPoster(selectedScheduleMovie)} alt={selectedScheduleMovie.title} />
+                  ) : (
+                    <span>No Image</span>
+                  )}
+                </div>
+                <div className="schedule-detail-info">
+                  <h2>{selectedScheduleMovie.title}</h2>
+                  <p className="duration">{formatDuration(selectedScheduleMovie.duration)}</p>
+                  <p>
+                    Thể loại: <a href="#movies">{selectedScheduleMovie.genre || "Đang cập nhật"}</a>
+                  </p>
+                  <p>Đạo diễn: {selectedScheduleMovie.director || "Đang cập nhật"}</p>
+                  <p>Diễn viên: {selectedScheduleMovie.cast || selectedScheduleMovie.actors || "Đang cập nhật"}</p>
+                  <p className="movie-rating">
+                    Giới hạn độ tuổi: <span>{getAgeRating(selectedScheduleMovie)}</span> -{" "}
+                    {getAgeDescription(getAgeRating(selectedScheduleMovie))}
+                  </p>
+                </div>
+                <div className="schedule-trailer">
+                  <h3>Trailer</h3>
+                  {getTrailerEmbedUrl(selectedScheduleMovie) ? (
+                    <iframe
+                      src={getTrailerEmbedUrl(selectedScheduleMovie)}
+                      title={`Trailer ${selectedScheduleMovie.title}`}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div className="trailer-empty">Phim này chưa có trailer.</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="schedule-theater-select">
+            <label>
+              <span>Chọn rạp</span>
+              <select
+                value={selectedScheduleTheater?.id || ""}
+                onChange={(event) => setSelectedScheduleTheaterId(event.target.value)}
+              >
+                {scheduleTheaters.map((theater) => (
+                  <option key={theater.id} value={theater.id}>
+                    {theater.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+
+        {hasScheduleData && hasSelectedScheduleTarget && (
+          <>
+            <div className="schedule-date-row">
+          {scheduleDates.map((date) => (
+            <button
+              key={date.value}
+              type="button"
+              className={selectedScheduleDate === date.value ? "active" : ""}
+              onClick={() => setSelectedScheduleDate(date.value)}
+            >
+              {date.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="schedule-list">
+          <h2>Lịch Chiếu Phim</h2>
+              {scheduleGroups.length === 0 ? (
+                <div className="schedule-empty" role="status">
+                  Chưa có lịch chiếu ngày này.
+                </div>
+          ) : (
+            scheduleGroups.map((group) => (
+              <div className="schedule-row" key={group.key}>
+                <div className="schedule-row-title">
+                  {scheduleMode === "movie"
+                    ? group.theater?.name || `Rạp #${group.times[0]?.theaterId}`
+                    : group.movie?.title || group.times[0]?.movieName}
+                </div>
+                <div className="schedule-row-times">
+                  <strong>{group.formatType}</strong>
+                  <div>
+                    {group.times.map((showtime) => (
+                      <button
+                        key={showtime.id}
+                        type="button"
+                        onClick={() => openBookingFlow(showtime, group.movie || selectedScheduleMovie)}
+                      >
+                        {formatShowtimeTime(showtime.startTime)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))
+              )}
+            </div>
+          </>
+        )}
       </section>
 
       <section className="client-placeholder" id="news">
@@ -429,8 +1288,18 @@ function HomePage() {
             </div>
 
             {auth?.emailVerified === false && (
-              <p className="verify-note">Vui lòng kích hoạt email để nhận các ưu đãi từ HMCinema!</p>
+              <div className="verify-note">
+                <div>
+                  <strong>Xác nhận email để nhận ưu đãi</strong>
+                  <span>Bạn vẫn có thể dùng website bình thường. Email chỉ cần xác nhận khi muốn nhận khuyến mãi và ưu đãi thành viên.</span>
+                </div>
+                <button type="button" onClick={handleResendVerificationEmail} disabled={verificationSending}>
+                  {verificationSending ? "Đang gửi..." : "Gửi email xác nhận"}
+                </button>
+              </div>
             )}
+
+            {verificationMessage && <p className="verify-message">{verificationMessage}</p>}
           </div>
 
           <div className="member-stats">
@@ -456,6 +1325,482 @@ function HomePage() {
     </main>
   );
 
+  const renderMovieDetail = () => {
+    if (!selectedMovie) return renderHome();
+
+    const rating = getAgeRating(selectedMovie);
+    const trailerEmbedUrl = getTrailerEmbedUrl(selectedMovie);
+    const movieShowtimeDates = Array.from(
+      new Set(
+        activeShowtimes
+          .filter((showtime) => Number(showtime.movieId) === Number(selectedMovie.id))
+          .map((showtime) => showtime.showDate)
+          .filter(Boolean),
+      ),
+    ).sort();
+    const today = toDateInputValue(new Date());
+    const firstDateWithShowtime = movieShowtimeDates.find((date) => date >= today) || movieShowtimeDates[0];
+    const detailDates = buildScheduleDates(parseLocalDate(firstDateWithShowtime || today), 8);
+    const detailShowtimes = activeShowtimes.filter(
+      (showtime) =>
+        Number(showtime.movieId) === Number(selectedMovie.id) &&
+        showtime.showDate === detailScheduleDate,
+    );
+    const detailGroups = Array.from(
+      detailShowtimes
+        .reduce((groups, showtime) => {
+          const key = `${showtime.theaterId}-${showtime.formatType || "2D"}`;
+          if (!groups.has(key)) {
+            groups.set(key, {
+              key,
+              theater: theaterMap.get(Number(showtime.theaterId)),
+              formatType: showtime.formatType || "2D",
+              times: [],
+            });
+          }
+          groups.get(key).times.push(showtime);
+          return groups;
+        }, new Map())
+        .values(),
+    ).map((group) => ({
+      ...group,
+      times: group.times.sort((a, b) => String(a.startTime).localeCompare(String(b.startTime))),
+    }));
+
+    return (
+      <main className="client-main movie-detail-page">
+        <button type="button" className="movie-detail-back" onClick={() => setView("home")}>
+          ← Quay lại danh sách phim
+        </button>
+
+        <section className="movie-detail-hero">
+          <div className="movie-detail-poster">
+            {getPoster(selectedMovie) ? (
+              <img src={getPoster(selectedMovie)} alt={selectedMovie.title} />
+            ) : (
+              <span>No Image</span>
+            )}
+          </div>
+
+          <div className="movie-detail-content">
+            <h1>{selectedMovie.title}</h1>
+            <p className="duration">{formatDuration(selectedMovie.duration)}</p>
+            <p>
+              <strong>Thể loại:</strong> {selectedMovie.genre || "Đang cập nhật"}
+            </p>
+            <p>
+              <strong>Đạo diễn:</strong> {selectedMovie.director || "Đang cập nhật"}
+            </p>
+            <p>
+              <strong>Diễn viên:</strong> {selectedMovie.cast || selectedMovie.actors || "Đang cập nhật"}
+            </p>
+            <p className="movie-rating">
+              <strong>Giới hạn độ tuổi:</strong> <span>{rating}</span> - {getAgeDescription(rating)}
+            </p>
+            <div className="movie-detail-description">
+              <h2>Nội dung</h2>
+              <p>{selectedMovie.description || "Nội dung phim đang được cập nhật."}</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="movie-detail-trailer">
+          <h2>Trailer</h2>
+          {trailerEmbedUrl ? (
+            <iframe
+              src={trailerEmbedUrl}
+              title={`Trailer ${selectedMovie.title}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <div className="trailer-empty">Phim này chưa có trailer.</div>
+          )}
+        </section>
+
+        <section className="movie-detail-schedule">
+          <h2>Lịch Chiếu Phim</h2>
+          {movieShowtimeDates.length === 0 ? (
+            <div className="schedule-empty" role="status">
+              Phim này chưa có lịch chiếu.
+            </div>
+          ) : (
+            <>
+              <div className="schedule-date-row">
+                {detailDates.map((date) => (
+                  <button
+                    key={date.value}
+                    type="button"
+                    className={detailScheduleDate === date.value ? "active" : ""}
+                    onClick={() => setDetailScheduleDate(date.value)}
+                  >
+                    {date.label}
+                  </button>
+                ))}
+              </div>
+
+              {detailGroups.length === 0 ? (
+                <div className="schedule-empty" role="status">
+                  Chưa có lịch chiếu ngày này.
+                </div>
+              ) : (
+                detailGroups.map((group) => (
+                  <div className="schedule-row" key={group.key}>
+                    <div className="schedule-row-title">
+                      {group.theater?.name || `Rạp #${group.times[0]?.theaterId}`}
+                    </div>
+                    <div className="schedule-row-times">
+                      <strong>{group.formatType}</strong>
+                      <div>
+                        {group.times.map((showtime) => (
+                          <button key={showtime.id} type="button" onClick={() => openBookingFlow(showtime, selectedMovie)}>
+                            {formatShowtimeTime(showtime.startTime)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </>
+          )}
+        </section>
+      </main>
+    );
+  };
+
+  const renderBooking = () => {
+    if (!bookingShowtime || !bookingMovie) return renderHome();
+
+    const rating = getAgeRating(bookingMovie);
+    const showtimeLabel = `${bookingShowtime.showDate || ""} ${formatShowtimeTime(bookingShowtime.startTime)}`;
+    const roomName = bookingShowtime.roomName || `Phòng #${bookingShowtime.roomId}`;
+    const selectedSeatCodes = selectedBookingSeats.map((seat) => seat.seatCode).join(", ");
+    const selectedComboText = selectedBookingCombos.map((combo) => `${combo.name} x${combo.quantity}`).join(", ");
+
+    return (
+      <main className="client-booking-page">
+        <button type="button" className="movie-detail-back" onClick={() => setView("movieDetail")}>
+          ← Quay lại chi tiết phim
+        </button>
+
+        <section className="client-booking-layout">
+          <aside className="booking-side-panel">
+            <div className="booking-side-poster">
+              {getPoster(bookingMovie) ? <img src={getPoster(bookingMovie)} alt={bookingMovie.title} /> : <span>No Image</span>}
+            </div>
+            <h2>{bookingMovie.title}</h2>
+            <p>
+              Suất chiếu: <strong>{showtimeLabel}</strong>
+            </p>
+            <p>
+              Rạp: <strong>{bookingTheater?.name || `Rạp #${bookingShowtime.theaterId}`}</strong>
+            </p>
+            <p>
+              Phòng: <strong>{roomName}</strong>
+            </p>
+            <p className="booking-age">
+              Giới hạn độ tuổi: <span>{rating}</span> - {getAgeDescription(rating)}
+            </p>
+            <div className="booking-side-summary">
+              <p>🍿 Combo: <strong>{selectedComboText || "—"}</strong></p>
+              <p>💺 Ghế: <strong>{selectedSeatCodes || "—"}</strong></p>
+              <p>= Tổng Tiền: <strong>{formatMoney(bookingTotal)}</strong></p>
+              {selectedBookingSeats.length > 0 && (
+                <div className={`booking-hold-timer ${bookingHoldSeconds <= 60 ? "danger" : ""}`}>
+                  <span>Thời gian giữ ghế</span>
+                  <strong>{formatHoldTime(bookingHoldSeconds)}</strong>
+                </div>
+              )}
+            </div>
+          </aside>
+
+          <section className="booking-step-panel">
+            <div className="booking-step-tabs">
+              <button className={bookingStep === 1 ? "active" : ""} type="button" onClick={() => setBookingStep(1)}>
+                1. Chọn Ghế
+              </button>
+              <button
+                className={bookingStep === 2 ? "active" : ""}
+                type="button"
+                onClick={() => selectedBookingSeats.length > 0 && setBookingStep(2)}
+              >
+                2. Chọn Combo
+              </button>
+              <button
+                className={bookingStep === 3 ? "active" : ""}
+                type="button"
+                onClick={() => selectedBookingSeats.length > 0 && setBookingStep(3)}
+                disabled={selectedBookingSeats.length === 0}
+              >
+                3. Thanh toán
+              </button>
+            </div>
+
+            {bookingError && <div className="booking-error">{bookingError}</div>}
+
+            {bookingStep === 1 ? (
+              <div className="booking-seat-section">
+                <h1>Chọn Ghế</h1>
+                <div className="booking-room-name">{roomName}</div>
+                <div className="booking-seat-legend">
+                  <span><i className="standard" /> 85,000 đ</span>
+                  <span><i className="vip" /> 105,000 đ</span>
+                  <span><i className="couple" /> 115,000 đ</span>
+                  <span><i className="selected" /> Ghế đang chọn</span>
+                  <span><i className="sold" /> Ghế đã bán</span>
+                  <span><i className="maintenance" /> Ghế bảo trì</span>
+                </div>
+                <div className="booking-screen">Màn hình</div>
+
+                {bookingLoading ? (
+                  <div className="schedule-empty">Đang tải sơ đồ ghế...</div>
+                ) : bookingSeatRows.length === 0 ? (
+                  <div className="schedule-empty">Phòng này chưa có sơ đồ ghế.</div>
+                ) : (
+                  <div className="client-seat-map">
+                    {bookingSeatRows.map((row) => (
+                      <div className="client-seat-row" key={row.row}>
+                        {row.seats.map((seat) => {
+                          const status = String(seat.status || "ACTIVE").toUpperCase();
+                          const maintenance = status && status !== "ACTIVE";
+                          const selected = selectedBookingSeats.some((item) => Number(item.id) === Number(seat.id));
+                          const ownHeld = ownHeldSeatIds.has(String(seat.id));
+                          const sold = bookedSeatIds.has(String(seat.id)) && !ownHeld && !selected;
+                          const typeClass = String(seat.seatType || "STANDARD").toLowerCase();
+
+                          return (
+                            <button
+                              key={seat.id}
+                              type="button"
+                              className={`client-seat-cell ${typeClass} ${sold ? "sold" : ""} ${maintenance ? "maintenance" : ""} ${
+                                selected ? "selected" : ""
+                              }`}
+                              onClick={() => toggleBookingSeat(seat)}
+                              disabled={sold || maintenance}
+                              title={`${seat.seatCode} - ${formatMoney(seatPrice(seat))}`}
+                            >
+                              {maintenance ? "X" : selected ? "✓" : seat.seatCode}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="client-booking-actions">
+                  <button type="button" disabled={selectedBookingSeats.length === 0 || bookingLoading} onClick={() => setBookingStep(2)}>
+                    Tiếp theo
+                  </button>
+                </div>
+              </div>
+            ) : bookingStep === 2 ? (
+              <div className="booking-combo-section">
+                <h1>Chọn Combo</h1>
+                {bookingLoading ? (
+                  <div className="schedule-empty">Đang tải combo...</div>
+                ) : bookingCombos.length === 0 ? (
+                  <div className="schedule-empty">Chưa có combo đang bán.</div>
+                ) : (
+                  <div className="client-combo-grid">
+                    {bookingCombos.map((combo) => (
+                      <article className="client-combo-card" key={combo.id}>
+                        <div className="combo-image">
+                          {combo.imageUrl ? <img src={combo.imageUrl} alt={combo.name} /> : <span>No Image</span>}
+                        </div>
+                        <div className="combo-info">
+                          <h2>{combo.name}</h2>
+                          <p>{combo.description || "Combo bắp nước tại rạp"}</p>
+                          <p>
+                            Giá: <strong>{formatMoney(combo.price)}</strong>
+                          </p>
+                          <div className="combo-quantity">
+                            <button type="button" onClick={() => updateBookingComboQuantity(combo.id, -1)}>
+                              −
+                            </button>
+                            <input value={bookingComboQuantities[combo.id] || 0} readOnly />
+                            <button type="button" onClick={() => updateBookingComboQuantity(combo.id, 1)}>
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+
+                <div className="client-booking-actions">
+                  <button type="button" className="secondary" onClick={() => setBookingStep(1)}>
+                    Trở lại
+                  </button>
+                  <button type="button" disabled={bookingLoading} onClick={() => setBookingStep(3)}>
+                    Tiếp theo
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="booking-payment-section">
+                <h1>Thanh toán</h1>
+                <div className="client-payment-card">
+                  <div>
+                    <span>Tiền vé</span>
+                    <strong>{formatMoney(bookingTicketTotal)}</strong>
+                  </div>
+                  <div>
+                    <span>Combo</span>
+                    <strong>{formatMoney(bookingComboTotal)}</strong>
+                  </div>
+                  <div className="total">
+                    <span>Tổng tiền</span>
+                    <strong>{formatMoney(bookingTotal)}</strong>
+                  </div>
+                </div>
+                <div className="client-payment-note">
+                  Sau khi bấm đặt vé, hệ thống lưu booking trạng thái PENDING. Chức năng thanh toán online có thể nối VNPay ở bước tiếp theo.
+                </div>
+                <div className="client-booking-actions">
+                  <button type="button" className="secondary" onClick={() => setBookingStep(2)}>
+                    Trở lại
+                  </button>
+                  <button type="button" disabled={bookingLoading} onClick={submitClientBooking}>
+                    Đặt vé
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        </section>
+      </main>
+    );
+  };
+
+  const renderFilterPanel = () => (
+    <div className={`movie-filter-overlay ${filterOpen ? "open" : ""}`} aria-hidden={!filterOpen}>
+      <button
+        type="button"
+        className="movie-filter-backdrop"
+        aria-label="Đóng bộ lọc"
+        onClick={closeFilterPanel}
+      />
+      <aside className="movie-filter-drawer" aria-label="Bộ lọc phim">
+        <div className="filter-drawer-head">
+          <h2>Bộ lọc</h2>
+          <button type="button" onClick={closeFilterPanel} aria-label="Đóng bộ lọc">
+            ×
+          </button>
+        </div>
+
+        <form className="filter-drawer-form" onSubmit={applyMovieFilters}>
+          <label>
+            <span>Diễn viên</span>
+            <input
+              value={draftFilters.actor}
+              onChange={(event) => updateDraftFilter("actor", event.target.value)}
+              placeholder="Nhập tên diễn viên"
+            />
+          </label>
+
+          <label>
+            <span>Đạo diễn</span>
+            <input
+              value={draftFilters.director}
+              onChange={(event) => updateDraftFilter("director", event.target.value)}
+              placeholder="Nhập tên đạo diễn"
+            />
+          </label>
+
+          <div className="filter-field">
+            <span>Thể loại</span>
+            <div className="genre-filter-box">
+              {draftFilters.genres.length === 0 ? (
+                <em>Chọn thể loại</em>
+              ) : (
+                draftFilters.genres.map((genre) => (
+                  <button key={genre} type="button" onClick={() => toggleDraftGenre(genre)}>
+                    × {genre}
+                  </button>
+                ))
+              )}
+            </div>
+
+            <div className="genre-filter-options">
+              {availableGenres.map((genre) => (
+                <button
+                  key={genre}
+                  type="button"
+                  className={draftFilters.genres.includes(genre) ? "selected" : ""}
+                  onClick={() => toggleDraftGenre(genre)}
+                >
+                  {genre}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <label>
+            <span>Giới hạn độ tuổi</span>
+            <select
+              value={draftFilters.ageRating}
+              onChange={(event) => updateDraftFilter("ageRating", event.target.value)}
+            >
+              <option value="">Tất cả</option>
+              <option value="P">P - Mọi độ tuổi</option>
+              <option value="K">K - Dưới 13 tuổi có giám hộ</option>
+              <option value="C13">C13 - Từ 13 tuổi</option>
+              <option value="C16">C16 - Từ 16 tuổi</option>
+              <option value="C18">C18 - Từ 18 tuổi</option>
+            </select>
+          </label>
+
+          <div className="filter-actions">
+            <button type="button" className="secondary" onClick={resetMovieFilters}>
+              Xóa lọc
+            </button>
+            <button type="submit" className="primary">
+              Chấp nhận
+            </button>
+          </div>
+        </form>
+      </aside>
+    </div>
+  );
+
+  /*
+  const renderTrailerModal = () => {
+    if (!trailerMovie) return null;
+
+    const trailerEmbedUrl = getTrailerEmbedUrl(trailerMovie);
+
+    return (
+      <div className="client-trailer-overlay" onMouseDown={() => setTrailerMovie(null)}>
+        <div className="client-trailer-modal" onMouseDown={(event) => event.stopPropagation()}>
+          <div className="trailer-modal-head">
+            <div>
+              <span>Trailer</span>
+              <h2>{trailerMovie.title}</h2>
+            </div>
+            <button type="button" onClick={() => setTrailerMovie(null)} aria-label="Đóng trailer">
+              ×
+            </button>
+          </div>
+
+          {trailerEmbedUrl ? (
+            <iframe
+              src={trailerEmbedUrl}
+              title={`Trailer ${trailerMovie.title}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <div className="trailer-empty">Phim này chưa có trailer.</div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  */
   return (
     <div className="client-home">
       <header className="client-header">
@@ -465,7 +1810,7 @@ function HomePage() {
           </Link>
 
           <nav className="client-nav" aria-label="Điều hướng khách hàng">
-            <button type="button" onClick={() => setView("home")}>
+            <button type="button" onClick={openFilterPanel}>
               TÌM KIẾM THEO BỘ LỌC
             </button>
             <a href="#schedule" onClick={() => setView("home")}>
@@ -498,7 +1843,14 @@ function HomePage() {
         </div>
       </header>
 
-      {view === "account" && auth ? renderAccount() : renderHome()}
+      {view === "account" && auth
+        ? renderAccount()
+        : view === "movieDetail"
+          ? renderMovieDetail()
+          : view === "booking"
+            ? renderBooking()
+            : renderHome()}
+      {renderFilterPanel()}
 
       <footer className="client-footer" id="support">
         <div>© HMCinema</div>

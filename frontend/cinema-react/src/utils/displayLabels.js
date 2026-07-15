@@ -8,6 +8,8 @@ export const movieStatusLabel = (value) =>
     {
       NOW_SHOWING: "Đang chiếu",
       COMING_SOON: "Sắp chiếu",
+      ADVANCE_BOOKING: "Vé bán trước",
+      PRE_SALE: "Vé bán trước",
       STOPPED: "Ngừng chiếu",
       ACTIVE: "Đang chiếu",
       INACTIVE: "Ngừng chiếu",

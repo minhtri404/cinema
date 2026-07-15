@@ -100,15 +100,18 @@ Co the goi truc tiep service khi can debug:
 File init SQL nam tai:
 
 ```text
-docker/mysql/init/02-create-tables.sql
+docker/mysql/init/01-full-database.sql
 ```
 
-File nay tao:
+File nay la dump day du, tao database, bang va du lieu mau cho:
 
-- `movie_db.movies`
-- `movie_db.genres`
-- `showtime_db.theaters`
-- `user_db.users`
+- `movie_db`
+- `showtime_db`
+- `booking_db`
+- `user_db`
+- `payment_db`
+- `notification_db`
+- `media_db`
 
 Luu y: MySQL chi tu chay file init khi volume duoc tao lan dau. Neu da chay Docker truoc do va muon nap lai du lieu mau:
 
@@ -122,7 +125,7 @@ Lenh tren se xoa database local trong Docker volume.
 Neu khong muon xoa volume, co the import lai SQL thu cong khi MySQL dang chay:
 
 ```powershell
-Get-Content .\docker\mysql\init\02-create-tables.sql | docker exec -i cinema-mysql mysql -uroot -p123456
+Get-Content .\docker\mysql\init\01-full-database.sql | docker exec -i cinema-mysql mysql -uroot -p123456
 ```
 
 Kiem tra nhanh du lieu:

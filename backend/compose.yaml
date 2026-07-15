@@ -10,7 +10,7 @@
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+      - ../docker/mysql/init/01-full-database.sql:/docker-entrypoint-initdb.d/01-full-database.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
@@ -35,17 +35,28 @@
     networks:
       - cinema-net
 
+  redis:
+    image: redis:7.2-alpine
+    container_name: cinema-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - cinema-net
+
   api-gateway:
     build:
       context: ./api-gateway
     container_name: cinema-api-gateway
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_DATA_REDIS_HOST: redis
     ports:
       - "8080:8080"
     depends_on:
       eureka-server:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - cinema-net
 
@@ -98,6 +109,7 @@
       SPRING_DATASOURCE_PASSWORD: demo_password_change_me
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       PRODUCT_SERVICE_BASE_URL: http://movie-service
+      SPRING_DATA_REDIS_HOST: redis
     ports:
       - "8083:8083"
     depends_on:
@@ -106,6 +118,8 @@
       eureka-server:
         condition: service_healthy
       movie-service:
+        condition: service_started
+      redis:
         condition: service_started
     networks:
       - cinema-net
@@ -119,6 +133,7 @@
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: demo_password_change_me
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_DATA_REDIS_HOST: redis
     ports:
       - "8084:8084"
     depends_on:
@@ -126,6 +141,8 @@
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - cinema-net
 

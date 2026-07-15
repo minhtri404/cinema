@@ -43,12 +43,28 @@ public class JwtGatewayFilter extends OncePerRequestFilter {
         if (!path.startsWith("/api/")) {
             return true;
         }
-        return path.startsWith("/api/auth/login")
+        return isPublicReadEndpoint(request, path)
+                || path.startsWith("/api/auth/login")
                 || path.startsWith("/api/auth/register")
                 || path.startsWith("/api/auth/verify-email")
+                || path.startsWith("/api/auth/resend-verification")
                 || path.startsWith("/api/auth/refresh")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui");
+    }
+
+    private boolean isPublicReadEndpoint(HttpServletRequest request, String path) {
+        if (!"GET".equalsIgnoreCase(request.getMethod())) {
+            return false;
+        }
+        return path.startsWith("/api/movies")
+                || path.startsWith("/api/advertisements")
+                || path.startsWith("/api/showtimes")
+                || path.startsWith("/api/theaters")
+                || path.startsWith("/api/rooms")
+                || path.startsWith("/api/seats")
+                || path.startsWith("/api/foods")
+                || (path.startsWith("/api/bookings/showtime/") && path.endsWith("/booked-seats"));
     }
 
     @Override

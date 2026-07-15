@@ -7,6 +7,8 @@ import { cleanupMediaByUrl } from "../../../api/mediaApi";
 import { getYouTubeEmbedUrl } from "../../../utils/youtube";
 import "../../../styles/movie.css";
 
+const ageRatingOptions = ["P", "K", "C13", "C16", "C18"];
+
 function MovieCreatePage() {
   const navigate = useNavigate();
 
@@ -14,6 +16,7 @@ function MovieCreatePage() {
     title: "",
     description: "",
     genre: "",
+    ageRating: "C16",
     duration: "",
     director: "",
     releaseDate: "",
@@ -174,6 +177,17 @@ function MovieCreatePage() {
                 </div>
 
                 <div className="form-group">
+                  <label>Độ tuổi</label>
+                  <select name="ageRating" value={form.ageRating} onChange={handleChange}>
+                    {ageRatingOptions.map((rating) => (
+                      <option key={rating} value={rating}>
+                        {rating}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
                   <label>Đạo diễn</label>
                   <input
                     name="director"
@@ -203,6 +217,7 @@ function MovieCreatePage() {
                   >
                     <option value="NOW_SHOWING">Đang chiếu</option>
                     <option value="COMING_SOON">Sắp chiếu</option>
+                    <option value="ADVANCE_BOOKING">Vé bán trước</option>
                     <option value="STOPPED">Ngừng chiếu</option>
                   </select>
                 </div>

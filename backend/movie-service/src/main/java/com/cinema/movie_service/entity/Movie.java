@@ -26,6 +26,8 @@ public class Movie {
 
     private String genre;
 
+    private String ageRating;
+
     private Integer duration;
 
     private String director;

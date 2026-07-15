@@ -21,6 +21,7 @@ import java.util.List;
 public class MovieController {
 
     private final MovieRepository movieRepository;
+    private static final String DEFAULT_AGE_RATING = "C16";
 
     @GetMapping
     public List<Movie> getAll() {
@@ -36,6 +37,7 @@ public class MovieController {
     @PostMapping
     public Movie create(@RequestBody Movie movie) {
         movie.setCreatedAt(LocalDateTime.now());
+        movie.setAgeRating(normalizeAgeRating(movie.getAgeRating()));
         return movieRepository.save(movie);
     }
 
@@ -47,6 +49,7 @@ public class MovieController {
         movie.setTitle(request.getTitle());
         movie.setDescription(request.getDescription());
         movie.setGenre(request.getGenre());
+        movie.setAgeRating(normalizeAgeRating(request.getAgeRating()));
         movie.setDuration(request.getDuration());
         movie.setDirector(request.getDirector());
         movie.setReleaseDate(request.getReleaseDate());
@@ -55,6 +58,13 @@ public class MovieController {
         movie.setStatus(request.getStatus());
 
         return movieRepository.save(movie);
+    }
+
+    private String normalizeAgeRating(String ageRating) {
+        if (ageRating == null || ageRating.isBlank()) {
+            return DEFAULT_AGE_RATING;
+        }
+        return ageRating.trim().toUpperCase();
     }
 
     @DeleteMapping("/{id}")

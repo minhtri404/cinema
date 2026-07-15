@@ -23,10 +23,7 @@ services:
       - "3309:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init/01-create-databases.sql:/docker-entrypoint-initdb.d/01-create-databases.sql:ro
-      - ./docker/mysql/init/02-create-tables.sql:/docker-entrypoint-initdb.d/02-create-tables.sql:ro
-      - ./docker/mysql/init/03-create-platform-services.sql:/docker-entrypoint-initdb.d/03-create-platform-services.sql:ro
-      - ./backend/sample-data.sql:/docker-entrypoint-initdb.d/04-sample-data.sql:ro
+      - ./docker/mysql/init/01-full-database.sql:/docker-entrypoint-initdb.d/01-full-database.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
       interval: 10s
@@ -143,6 +140,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: 123456
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       APP_JWT_SECRET: cinema-management-system-demo-secret-key-please-change
+      SPRING_DATA_REDIS_HOST: redis
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: admin
@@ -153,6 +151,8 @@ services:
       mysql:
         condition: service_healthy
       eureka-server:
+        condition: service_started
+      redis:
         condition: service_started
       rabbitmq:
         condition: service_started

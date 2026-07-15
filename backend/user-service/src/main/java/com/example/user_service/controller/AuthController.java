@@ -5,6 +5,7 @@ import com.example.user_service.dto.LoginResponse;
 import com.example.user_service.dto.LogoutRequest;
 import com.example.user_service.dto.RefreshTokenRequest;
 import com.example.user_service.dto.RegisterRequest;
+import com.example.user_service.dto.EmailVerificationRequest;
 import com.example.user_service.entity.User;
 import com.example.user_service.repository.UserRepository;
 import com.example.user_service.service.AuthService;
@@ -43,6 +44,11 @@ public class AuthController {
     @GetMapping("/verify-email")
     public LoginResponse verifyEmail(@RequestParam String token) {
         return authService.verifyEmail(token);
+    }
+
+    @PostMapping("/resend-verification")
+    public String resendVerification(@RequestBody EmailVerificationRequest request) {
+        return authService.resendVerificationEmail(request);
     }
 
     @PostMapping("/refresh")

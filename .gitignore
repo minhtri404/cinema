@@ -4,6 +4,7 @@ target/
 *.bak-*
 03-current-dump.sql
 clean-admin-seed.sql
+backend/docker/mysql/
 
 .idea/
 .vscode/

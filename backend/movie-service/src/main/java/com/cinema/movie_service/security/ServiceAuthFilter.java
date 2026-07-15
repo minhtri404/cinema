@@ -29,8 +29,14 @@ public class ServiceAuthFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         return !path.startsWith("/api/")
+                || isPublicReadEndpoint(request, path)
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui");
+    }
+
+    private boolean isPublicReadEndpoint(HttpServletRequest request, String path) {
+        return "GET".equalsIgnoreCase(request.getMethod())
+                && path.startsWith("/api/movies");
     }
 
     @Override

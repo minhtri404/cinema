@@ -2,6 +2,7 @@ package com.cinema.booking_service.controller;
 
 import com.cinema.booking_service.client.UserClient;
 import com.cinema.booking_service.dto.BookedSeatDetail;
+import com.cinema.booking_service.dto.SeatLockInfo;
 import com.cinema.booking_service.entity.Booking;
 import com.cinema.booking_service.entity.BookingFood;
 import com.cinema.booking_service.entity.BookingSeat;
@@ -13,21 +14,28 @@ import com.cinema.booking_service.security.CurrentUser;
 import com.cinema.booking_service.security.CurrentUserFilter;
 import com.cinema.booking_service.service.BookingNotificationService;
 import com.cinema.booking_service.service.ProductServiceClient;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +53,11 @@ public class BookingController {
     private final UserClient userClient;
     private final BookingNotificationService notificationService;
     private final ProductServiceClient productServiceClient;
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
+
+    @Value("${app.booking.seat-hold-ttl-seconds:600}")
+    private long seatHoldTtlSeconds;
 
     @GetMapping
     public List<Booking> getAll(HttpServletRequest request) {
@@ -89,8 +102,61 @@ public class BookingController {
             @PathVariable Long showtimeId,
             HttpServletRequest request
     ) {
-        currentUser(request);
-        return bookingSeatRepository.findBookedByShowtimeId(showtimeId);
+        List<BookingSeat> result = new ArrayList<>(bookingSeatRepository.findBookedByShowtimeId(showtimeId));
+        Set<Long> existingSeatIds = new HashSet<>();
+        for (BookingSeat seat : result) {
+            existingSeatIds.add(seat.getSeatId());
+        }
+        for (RedisSeatHold hold : findRedisSeatHolds(showtimeId)) {
+            if (existingSeatIds.add(hold.getSeatId())) {
+                result.add(BookingSeat.builder()
+                        .seatId(hold.getSeatId())
+                        .seatCode(hold.getSeatCode())
+                        .price(hold.getPrice())
+                        .build());
+            }
+        }
+        return result;
+    }
+
+    @GetMapping("/showtime/{showtimeId}/seat-locks")
+    public List<SeatLockInfo> getSeatLocks(
+            @PathVariable Long showtimeId,
+            HttpServletRequest request
+    ) {
+        CurrentUser currentUser = currentUser(request);
+        Map<Long, SeatLockInfo> locks = new LinkedHashMap<>();
+
+        bookingSeatRepository.findBookedByShowtimeId(showtimeId)
+                .forEach(seat -> {
+                    Booking booking = seat.getBooking();
+                    String status = booking == null ? null : booking.getStatus();
+                    boolean ownHold = booking != null
+                            && currentUser.owns(booking.getUserId())
+                            && "HOLD".equalsIgnoreCase(status);
+                    locks.put(seat.getSeatId(), new SeatLockInfo(
+                            seat.getSeatId(),
+                            seat.getSeatCode(),
+                            seat.getPrice(),
+                            booking == null ? null : booking.getId(),
+                            status,
+                            ownHold
+                    ));
+                });
+
+        findRedisSeatHolds(showtimeId).forEach(hold -> locks.putIfAbsent(
+                hold.getSeatId(),
+                new SeatLockInfo(
+                        hold.getSeatId(),
+                        hold.getSeatCode(),
+                        hold.getPrice(),
+                        null,
+                        "HOLD",
+                        currentUser.owns(hold.getUserId())
+                )
+        ));
+
+        return new ArrayList<>(locks.values());
     }
 
     @GetMapping("/showtime/{showtimeId}/booked-seat-details")
@@ -128,6 +194,76 @@ public class BookingController {
                 .toList();
     }
 
+    @PostMapping("/holds")
+    @Transactional
+    public Map<String, Object> holdSeats(@RequestBody SeatHoldRequest holdRequest, HttpServletRequest request) {
+        CurrentUser currentUser = currentUser(request);
+        if (holdRequest == null || holdRequest.getShowtimeId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Suat chieu khong duoc de trong");
+        }
+
+        List<BookingSeat> requestedSeats = holdRequest.getSeats() == null
+                ? Collections.emptyList()
+                : holdRequest.getSeats();
+
+        if (requestedSeats.isEmpty()) {
+            releaseRedisHolds(currentUser.id(), holdRequest.getShowtimeId());
+            releaseActiveHolds(currentUser.id(), holdRequest.getShowtimeId());
+            return Map.of(
+                    "message", "Da bo giu ghe",
+                    "expiresIn", 0,
+                    "seats", Collections.emptyList()
+            );
+        }
+
+        Set<Long> requestedSeatIds = new HashSet<>();
+        for (BookingSeat seat : requestedSeats) {
+            if (seat.getSeatId() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ghe khong hop le");
+            }
+            if (!requestedSeatIds.add(seat.getSeatId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh sach ghe bi trung");
+            }
+            if (seat.getPrice() == null || seat.getPrice().signum() < 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Gia ghe khong hop le");
+            }
+        }
+
+        boolean seatAlreadyHeld = bookingSeatRepository
+                .findBookedByShowtimeId(holdRequest.getShowtimeId())
+                .stream()
+                .filter(bookingSeat -> bookingSeat.getBooking() == null
+                        || !currentUser.owns(bookingSeat.getBooking().getUserId()))
+                .map(BookingSeat::getSeatId)
+                .anyMatch(requestedSeatIds::contains);
+        if (seatAlreadyHeld) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Mot hoac nhieu ghe dang duoc nguoi khac giu/dat");
+        }
+
+        List<String> acquiredKeys = new ArrayList<>();
+        for (BookingSeat seat : requestedSeats) {
+            holdSeatInRedis(holdRequest.getShowtimeId(), currentUser.id(), seat, acquiredKeys);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        BigDecimal ticketAmount = BigDecimal.ZERO;
+        for (BookingSeat seat : requestedSeats) {
+            ticketAmount = ticketAmount.add(seat.getPrice());
+        }
+
+        releaseRedisHoldsExcept(currentUser.id(), holdRequest.getShowtimeId(), requestedSeatIds);
+        releaseActiveHolds(currentUser.id(), holdRequest.getShowtimeId());
+
+        return Map.of(
+                "message", "Da giu ghe trong 10 phut",
+                "bookingCode", "HD" + now.format(CODE_TIME),
+                "expiresAt", now.plusSeconds(seatHoldTtlSeconds),
+                "expiresIn", seatHoldTtlSeconds,
+                "ticketAmount", ticketAmount,
+                "seats", requestedSeats
+        );
+    }
+
     @PostMapping
     @Transactional
     public Booking create(@RequestBody Booking booking, HttpServletRequest request) {
@@ -150,7 +286,7 @@ public class BookingController {
         LocalDateTime now = LocalDateTime.now();
         booking.setId(null);
         booking.setBookingCode("BK" + now.format(CODE_TIME));
-        booking.setExpiredAt(now.plusMinutes(15));
+        booking.setExpiredAt(now.plusMinutes(10));
         booking.setPaidAt(null);
         booking.setCancelledAt(null);
         booking.setTicket(null);
@@ -177,6 +313,17 @@ public class BookingController {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Giá ghế không hợp lệ");
             }
         }
+
+        boolean seatHeldByOtherUser = findRedisSeatHolds(booking.getShowtimeId())
+                .stream()
+                .filter(hold -> !booking.getUserId().equals(hold.getUserId()))
+                .map(RedisSeatHold::getSeatId)
+                .anyMatch(requestedSeatIds::contains);
+        if (seatHeldByOtherUser) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Mot hoac nhieu ghe dang duoc nguoi khac giu");
+        }
+
+        releaseActiveHolds(booking.getUserId(), booking.getShowtimeId());
 
         boolean seatAlreadyBooked = bookingSeatRepository
                 .findBookedByShowtimeId(booking.getShowtimeId())
@@ -214,7 +361,9 @@ public class BookingController {
         booking.setStatus("PENDING");
         booking.setCreatedAt(now);
 
-        return bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
+        releaseRedisHolds(booking.getUserId(), booking.getShowtimeId());
+        return saved;
     }
 
     @PutMapping({"/{id}/pay", "/{id}/confirm"})
@@ -363,6 +512,133 @@ public class BookingController {
         return amount == null ? BigDecimal.ZERO : amount;
     }
 
+    private void releaseActiveHolds(Long userId, Long showtimeId) {
+        if (userId == null || showtimeId == null) {
+            return;
+        }
+
+        List<Booking> holds = bookingRepository.findActiveHoldsByUserAndShowtime(userId, showtimeId);
+        if (holds.isEmpty()) {
+            return;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        for (Booking hold : holds) {
+            hold.setStatus("CANCELLED");
+            hold.setCancelledAt(now);
+        }
+        bookingRepository.saveAll(holds);
+    }
+
+    private void holdSeatInRedis(
+            Long showtimeId,
+            Long userId,
+            BookingSeat seat,
+            List<String> acquiredKeys
+    ) {
+        String key = redisSeatHoldKey(showtimeId, seat.getSeatId());
+        RedisSeatHold existingHold = readRedisSeatHold(key);
+        RedisSeatHold hold = RedisSeatHold.from(showtimeId, userId, seat, seatHoldTtlSeconds);
+
+        if (existingHold != null) {
+            if (!userId.equals(existingHold.getUserId())) {
+                if (!acquiredKeys.isEmpty()) {
+                    redisTemplate.delete(acquiredKeys);
+                }
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Mot hoac nhieu ghe dang duoc nguoi khac giu/dat");
+            }
+            redisTemplate.opsForValue().set(key, writeRedisSeatHold(hold), Duration.ofSeconds(seatHoldTtlSeconds));
+            return;
+        }
+
+        Boolean acquired = redisTemplate.opsForValue()
+                .setIfAbsent(key, writeRedisSeatHold(hold), Duration.ofSeconds(seatHoldTtlSeconds));
+        if (!Boolean.TRUE.equals(acquired)) {
+            RedisSeatHold lateHold = readRedisSeatHold(key);
+            if (lateHold == null || !userId.equals(lateHold.getUserId())) {
+                if (!acquiredKeys.isEmpty()) {
+                    redisTemplate.delete(acquiredKeys);
+                }
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Mot hoac nhieu ghe dang duoc nguoi khac giu/dat");
+            }
+            redisTemplate.opsForValue().set(key, writeRedisSeatHold(hold), Duration.ofSeconds(seatHoldTtlSeconds));
+            return;
+        }
+
+        acquiredKeys.add(key);
+    }
+
+    private List<RedisSeatHold> findRedisSeatHolds(Long showtimeId) {
+        Set<String> keys = redisTemplate.keys(redisSeatHoldPattern(showtimeId));
+        if (keys == null || keys.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<RedisSeatHold> holds = new ArrayList<>();
+        for (String key : keys) {
+            RedisSeatHold hold = readRedisSeatHold(key);
+            if (hold != null) {
+                holds.add(hold);
+            }
+        }
+        return holds;
+    }
+
+    private void releaseRedisHolds(Long userId, Long showtimeId) {
+        releaseRedisHoldsExcept(userId, showtimeId, Collections.emptySet());
+    }
+
+    private void releaseRedisHoldsExcept(Long userId, Long showtimeId, Set<Long> keptSeatIds) {
+        if (userId == null || showtimeId == null) {
+            return;
+        }
+
+        Set<String> keys = redisTemplate.keys(redisSeatHoldPattern(showtimeId));
+        if (keys == null || keys.isEmpty()) {
+            return;
+        }
+
+        List<String> deleteKeys = new ArrayList<>();
+        for (String key : keys) {
+            RedisSeatHold hold = readRedisSeatHold(key);
+            if (hold != null && userId.equals(hold.getUserId()) && !keptSeatIds.contains(hold.getSeatId())) {
+                deleteKeys.add(key);
+            }
+        }
+        if (!deleteKeys.isEmpty()) {
+            redisTemplate.delete(deleteKeys);
+        }
+    }
+
+    private RedisSeatHold readRedisSeatHold(String key) {
+        String value = redisTemplate.opsForValue().get(key);
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(value, RedisSeatHold.class);
+        } catch (JsonProcessingException ignored) {
+            redisTemplate.delete(key);
+            return null;
+        }
+    }
+
+    private String writeRedisSeatHold(RedisSeatHold hold) {
+        try {
+            return objectMapper.writeValueAsString(hold);
+        } catch (JsonProcessingException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Khong the giu ghe tam thoi");
+        }
+    }
+
+    private String redisSeatHoldKey(Long showtimeId, Long seatId) {
+        return "cinema:booking:seat-hold:" + showtimeId + ":" + seatId;
+    }
+
+    private String redisSeatHoldPattern(Long showtimeId) {
+        return "cinema:booking:seat-hold:" + showtimeId + ":*";
+    }
+
     private UserClient.UserSummary getUserSafely(Long userId) {
         if (userId == null) return null;
         try {
@@ -377,5 +653,39 @@ public class BookingController {
     public static class PaymentRequest {
         private String paymentMethod;
         private String transactionCode;
+    }
+
+    @Getter
+    @Setter
+    public static class SeatHoldRequest {
+        private Long showtimeId;
+        private String movieTitle;
+        private String theaterName;
+        private String roomName;
+        private java.time.LocalDate showDate;
+        private java.time.LocalTime startTime;
+        private List<BookingSeat> seats;
+    }
+
+    @Getter
+    @Setter
+    public static class RedisSeatHold {
+        private Long showtimeId;
+        private Long userId;
+        private Long seatId;
+        private String seatCode;
+        private BigDecimal price;
+        private LocalDateTime expiresAt;
+
+        public static RedisSeatHold from(Long showtimeId, Long userId, BookingSeat seat, long ttlSeconds) {
+            RedisSeatHold hold = new RedisSeatHold();
+            hold.setShowtimeId(showtimeId);
+            hold.setUserId(userId);
+            hold.setSeatId(seat.getSeatId());
+            hold.setSeatCode(seat.getSeatCode());
+            hold.setPrice(seat.getPrice());
+            hold.setExpiresAt(LocalDateTime.now().plusSeconds(ttlSeconds));
+            return hold;
+        }
     }
 }

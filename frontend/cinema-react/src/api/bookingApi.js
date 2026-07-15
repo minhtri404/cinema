@@ -4,6 +4,8 @@ export const getBookings = () => axiosClient.get("/api/bookings");
 
 export const createBooking = (data) => axiosClient.post("/api/bookings", data);
 
+export const holdBookingSeats = (data) => axiosClient.post("/api/bookings/holds", data);
+
 export const getBookingById = (id) => axiosClient.get(`/api/bookings/${id}`);
 
 export const markBookingPaid = (id) =>
@@ -17,6 +19,9 @@ export const cancelBooking = (id) =>
 
 export const getBookedSeats = (showtimeId) =>
   axiosClient.get(`/api/bookings/showtime/${showtimeId}/booked-seats`);
+
+export const getSeatLocks = (showtimeId) =>
+  axiosClient.get(`/api/bookings/showtime/${showtimeId}/seat-locks`);
 
 export const getBookedSeatDetails = (showtimeId) =>
   axiosClient.get(`/api/bookings/showtime/${showtimeId}/booked-seat-details`);

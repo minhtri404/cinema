@@ -14,20 +14,20 @@ const saveClientAuth = (auth) => {
 const getErrorMessage = (error) => {
   const data = error?.response?.data;
   if (typeof data === "string" && data.trim()) return data;
-  return data?.message || "Kích hoạt tài khoản thất bại.";
+  return data?.message || "Xác nhận email thất bại.";
 };
 
 function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState("loading");
-  const [message, setMessage] = useState("Đang kích hoạt tài khoản...");
+  const [message, setMessage] = useState("Đang xác nhận email...");
   const verifyingTokenRef = useRef("");
 
   useEffect(() => {
     const token = searchParams.get("token")?.trim();
     if (!token) {
       setStatus("error");
-      setMessage("Thiếu mã kích hoạt email.");
+      setMessage("Thiếu mã xác nhận email.");
       return;
     }
 
@@ -41,7 +41,7 @@ function VerifyEmailPage() {
       .then((response) => {
         saveClientAuth(response.data);
         setStatus("success");
-        setMessage(response.data?.message || "Kích hoạt tài khoản thành công.");
+        setMessage(response.data?.message || "Xác nhận email thành công. Mã ưu đãi MEMBER20 đã được gửi qua email.");
       })
       .catch((error) => {
         verifyingTokenRef.current = "";
@@ -63,7 +63,7 @@ function VerifyEmailPage() {
       <main className="verify-email-page">
         <section className={`verify-email-card ${status}`}>
           <span className="verify-email-icon">{status === "success" ? "✓" : status === "error" ? "!" : "…"}</span>
-          <h1>Kích hoạt thành viên</h1>
+          <h1>Xác nhận email nhận ưu đãi</h1>
           <p>{message}</p>
           <Link to="/" className="verify-email-action">
             Về trang chủ

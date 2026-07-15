@@ -56,7 +56,7 @@ function MovieListPage() {
     if (!normalizedKeyword) return movies;
 
     return movies.filter((movie) => {
-      return [movie.title, movie.genre, movie.director, movie.status]
+      return [movie.title, movie.genre, movie.ageRating, movie.director, movie.status]
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(normalizedKeyword));
     });
@@ -132,6 +132,7 @@ function MovieListPage() {
                 <tr>
                   <th>Phim</th>
                   <th>Thể loại</th>
+                  <th>Độ tuổi</th>
                   <th>Đạo diễn</th>
                   <th>Thời lượng</th>
                   <th>Ngày phát hành</th>
@@ -167,6 +168,7 @@ function MovieListPage() {
                       </div>
                     </td>
                     <td>{movie.genre || "Chưa có"}</td>
+                    <td>{movie.ageRating || "Chưa có"}</td>
                     <td>{movie.director || "Chưa có"}</td>
                     <td>{movie.duration ? `${movie.duration} phút` : "Chưa có"}</td>
                     <td>{movie.releaseDate || "Chưa có"}</td>

@@ -33,16 +33,13 @@ RabbitMQ dashboard:
 
 ## File SQL khoi tao du lieu
 
-Docker se tu dong chay cac file SQL trong thu muc:
+Docker chi dung mot file SQL day du:
 
 ```text
-docker/mysql/init/
+../docker/mysql/init/01-full-database.sql
 ```
 
-Cac file hien co:
-
-- `01-create-databases.sql`: tao database cho cac service.
-- `02-create-tables.sql`: tao bang movies, genres, theaters, users va them du lieu mau.
+File nay tao database, bang va du lieu mau cho toan bo he thong. Khong tao them file SQL rieng trong `backend/docker/mysql/` nua de tranh lech du lieu.
 
 Anh poster mau duoc luu trong:
 
@@ -72,13 +69,13 @@ Dung cach nay khi MySQL dang chay va ban chi muon nap lai file SQL ma khong xoa 
 PowerShell:
 
 ```powershell
-Get-Content .\docker\mysql\init\02-create-tables.sql | docker exec -i cinema-mysql mysql -uroot -pdemo_password_change_me
+Get-Content ..\docker\mysql\init\01-full-database.sql | docker exec -i cinema-mysql mysql -uroot -pdemo_password_change_me
 ```
 
 CMD:
 
 ```bat
-docker exec -i cinema-mysql mysql -uroot -pdemo_password_change_me < docker\mysql\init\02-create-tables.sql
+docker exec -i cinema-mysql mysql -uroot -pdemo_password_change_me < ..\docker\mysql\init\01-full-database.sql
 ```
 
 Kiem tra du lieu sau khi import:
@@ -174,7 +171,7 @@ mvn spring-boot:run
 
 ## Tai khoan demo
 
-Neu da import `02-create-tables.sql`, co the dang nhap frontend bang:
+Neu da import `01-full-database.sql`, co the dang nhap frontend bang:
 
 - Email: `admin@example.invalid`
 - Password: `demo_password_change_me`

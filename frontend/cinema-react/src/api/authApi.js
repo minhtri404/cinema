@@ -16,6 +16,10 @@ export const verifyEmail = (token) => {
   return axiosClient.get("/api/auth/verify-email", { params: { token } });
 };
 
+export const resendVerificationEmail = (email) => {
+  return axiosClient.post("/api/auth/resend-verification", { email });
+};
+
 export const logoutUser = (refreshToken) => {
   return axiosClient.post("/api/auth/logout", { refreshToken });
 };

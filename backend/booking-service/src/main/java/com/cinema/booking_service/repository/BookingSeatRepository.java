@@ -21,6 +21,11 @@ public interface BookingSeatRepository extends JpaRepository<BookingSeat, Long> 
                 booking.status IS NULL
                 OR UPPER(booking.status) NOT IN :cancelledStatuses
               )
+              AND (
+                booking.expiredAt IS NULL
+                OR booking.expiredAt > CURRENT_TIMESTAMP
+                OR UPPER(booking.status) = 'PAID'
+              )
             """)
     List<BookingSeat> findBookedByShowtimeId(
             @Param("showtimeId") Long showtimeId,

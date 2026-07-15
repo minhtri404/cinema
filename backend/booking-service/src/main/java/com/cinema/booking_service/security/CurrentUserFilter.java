@@ -22,7 +22,17 @@ public class CurrentUserFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui");
+        return path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-ui")
+                || isPublicReadEndpoint(request, path);
+    }
+
+    private boolean isPublicReadEndpoint(HttpServletRequest request, String path) {
+        if (!"GET".equalsIgnoreCase(request.getMethod())) {
+            return false;
+        }
+        return path.startsWith("/api/foods")
+                || (path.startsWith("/api/bookings/showtime/") && path.endsWith("/booked-seats"));
     }
 
     @Override

@@ -42,23 +42,59 @@ public class EmailVerificationService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(user.getEmail());
-            message.setSubject("Kích hoạt tài khoản HMCinema");
+            message.setSubject("Xác nhận email nhận ưu đãi HMCinema");
             message.setText("""
                     Xin chào %s,
 
-                    Cảm ơn bạn đã đăng ký tài khoản HMCinema.
-                    Vui lòng bấm vào link bên dưới để kích hoạt tài khoản:
+                    Tài khoản của bạn vẫn có thể đăng nhập và sử dụng website bình thường.
+                    Vui lòng bấm vào link bên dưới nếu bạn muốn xác nhận email để nhận ưu đãi thành viên:
 
                     %s
 
                     Link có hiệu lực trong 24 giờ.
-                    Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email.
+                    Nếu bạn không yêu cầu email này, vui lòng bỏ qua.
 
                     HMCinema
                     """.formatted(user.getFullName(), activationLink));
             mailSender.send(message);
         } catch (Exception ex) {
             log.warn("Could not send activation email to {}. Fallback activation link: {}", user.getEmail(), activationLink, ex);
+        }
+    }
+
+    public void sendMemberPromotionEmail(User user) {
+        String promotionCode = "MEMBER20";
+        String promotionText = """
+                Xin chào %s,
+
+                Email của bạn đã được xác nhận thành công.
+                HMCinema gửi bạn mã ưu đãi thành viên:
+
+                Mã khuyến mãi: %s
+                Ưu đãi: Giảm 20%% cho thành viên
+                Điều kiện: Đơn từ 150.000đ
+                Giảm tối đa: 80.000đ
+                Hạn sử dụng: 30/10/2026
+
+                Hãy nhập mã %s khi thanh toán để áp dụng ưu đãi.
+
+                HMCinema
+                """.formatted(user.getFullName(), promotionCode, promotionCode);
+
+        if (!mailEnabled) {
+            log.info("Mail is disabled. Member promotion email for {}: {}", user.getEmail(), promotionText);
+            return;
+        }
+
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(user.getEmail());
+            message.setSubject("Mã ưu đãi thành viên HMCinema - MEMBER20");
+            message.setText(promotionText);
+            mailSender.send(message);
+        } catch (Exception ex) {
+            log.warn("Could not send member promotion email to {}", user.getEmail(), ex);
         }
     }
 }
