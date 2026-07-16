@@ -27,7 +27,7 @@ export const formatShowtimeTime = (value) => String(value || "").slice(0, 5);
 
 export const formatDuration = (duration) => {
   if (!duration) return "Đang cập nhật";
-  return `${duration} phÃºt`;
+  return `${duration} phút`;
 };
 
 export const getMovieStatus = (movie) => String(movie.status || "").trim().toUpperCase();
@@ -198,7 +198,7 @@ export const formatHoldTime = (seconds) => {
   return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
 };
 
-export const formatMoney = (value) => `${Number(value || 0).toLocaleString("vi-VN")} đ`;
+export const formatMoney = (value) => `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 
 export const seatPrice = (seat) => {
   const type = String(seat.seatType || "").toUpperCase();
@@ -226,8 +226,25 @@ export const groupSeatsByRow = (seats) => {
 
 export const normalizeClientText = (value) =>
   String(value || "")
-    .replace(/Ph??ng/gi, "Ph?ng")
-    .replace(/Ph??ng/gi, "Ph?ng")
-    .replace(/Ph(?:áº£|áº£|áº³|Ã²|ò|\? )ng/gi, "Phòng")
-    .replace(/Ráº¡p/gi, "Rạp")
-    .replace(/KhÃ¡ch h\?ng/gi, "Khách hàng");
+    .replace(/phÃºt|phÃƒÂºt/gi, "phút")
+    .replace(/Ná»™i dung/gi, "Nội dung")
+    .replace(/Quay láº¡i danh sÃ¡ch phim/gi, "Quay lại danh sách phim")
+    .replace(/Äang cáº­p nháº­t/gi, "Đang cập nhật")
+    .replace(/Cáº­p nháº­t/gi, "Cập nhật")
+    .replace(/Tiáº¿p theo/gi, "Tiếp theo")
+    .replace(/Trá»Ÿ láº¡i/gi, "Trở lại")
+    .replace(/Ráº¡p|RÃ¡ÂºÂ¡p|R\?p/gi, "Rạp")
+    .replace(/PhÃ²ng|Ph(?:áº£|áº³|Ã²|ò|\? )ng|Ph\?ng|Ph\?\?ng/gi, "Phòng")
+    .replace(/Cao Lá»—|Cao L\?/gi, "Cao Lỗ")
+    .replace(/HÃ nh \?á»™ng|HÃ nh Äá»™ng/gi, "Hành Động")
+    .replace(/Lá»‹ch Sá»­/gi, "Lịch Sử")
+    .replace(/TÃ¢m LÃ½/gi, "Tâm Lý")
+    .replace(/Kinh Dá»‹/gi, "Kinh Dị")
+    .replace(/THANH TRA SÃT NHÃ‚N/gi, "THANH TRA SÁT NHÂN")
+    .replace(/KhÃ¡ch h\?ng/gi, "Khách hàng")
+    .replace(/â†/g, "←")
+    .replace(/âœ“/g, "✓")
+    .replace(/âˆ’/g, "−")
+    .replace(/Â·/g, "·")
+    .replace(/\s+/g, " ")
+    .trim();

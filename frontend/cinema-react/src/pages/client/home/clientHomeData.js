@@ -12,7 +12,7 @@ export const fallbackMovies = [
     id: "oppenheimer",
     title: "OPPENHEIMER",
     duration: 70,
-    genre: "HÃ nh ?á»™ng | Lá»‹ch Sá»­ | TÃ¢m LÃ½",
+    genre: "Hành Động | Lịch Sử | Tâm Lý",
     director: "Christopher Nolan",
     ageRating: "C16",
     posterUrl:
@@ -23,7 +23,7 @@ export const fallbackMovies = [
     id: "blue-whale",
     title: "BLUE WHALE: THỬ THÁCH CÁ VOI XANH",
     duration: 100,
-    genre: "HÃ nh ?á»™ng | Kinh Dá»‹",
+    genre: "Hành Động | Kinh Dị",
     director: "Anna Zaytseva",
     ageRating: "C18",
     posterUrl:
@@ -32,9 +32,9 @@ export const fallbackMovies = [
   },
   {
     id: "detective",
-    title: "THANH TRA SÃT NHÃ‚N",
+    title: "THANH TRA SÁT NHÂN",
     duration: 180,
-    genre: "HÃ nh ?á»™ng",
+    genre: "Hành Động",
     director: "Đang cập nhật",
     ageRating: "C16",
     posterUrl:
@@ -75,4 +75,4 @@ export const initialMovieFilters = {
   ageRating: "",
 };
 
-export const BOOKING_HOLD_SECONDS = 10 * 60;
+export const BOOKING_HOLD_SECONDS = 600;

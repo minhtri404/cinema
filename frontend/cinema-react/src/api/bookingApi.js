@@ -2,6 +2,9 @@ import axiosClient from "./axiosClient";
 
 export const getBookings = () => axiosClient.get("/api/bookings");
 
+export const getBookingsByUser = (userId) =>
+  axiosClient.get(`/api/bookings/user/${userId}`);
+
 export const createBooking = (data) => axiosClient.post("/api/bookings", data);
 
 export const holdBookingSeats = (data) => axiosClient.post("/api/bookings/holds", data);

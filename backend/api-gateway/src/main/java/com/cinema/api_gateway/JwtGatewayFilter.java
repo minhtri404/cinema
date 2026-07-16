@@ -59,6 +59,8 @@ public class JwtGatewayFilter extends OncePerRequestFilter {
         }
         return path.startsWith("/api/movies")
                 || path.startsWith("/api/advertisements")
+                || path.startsWith("/api/events")
+                || path.startsWith("/api/news")
                 || path.startsWith("/api/showtimes")
                 || path.startsWith("/api/theaters")
                 || path.startsWith("/api/rooms")

@@ -46,6 +46,9 @@ import {
 } from "./home/clientHomeUtils";
 import BookingPaymentStep from "./home/components/BookingPaymentStep";
 import ClientAuthModal from "./home/components/ClientAuthModal";
+import ClientFooter from "./home/components/ClientFooter";
+import ClientNewsEventsSection from "./home/components/ClientNewsEventsSection";
+import ClientTransactionHistory from "./home/components/ClientTransactionHistory";
 import "../../styles/client-home.css";
 function HomePage() {
   const [movies, setMovies] = useState([]);
@@ -60,6 +63,7 @@ function HomePage() {
   const [bannerIndex, setBannerIndex] = useState(0);
   const [auth, setAuth] = useState(readClientAuth);
   const [view, setView] = useState("home");
+  const [accountTab, setAccountTab] = useState("profile");
   const [authMode, setAuthMode] = useState(null);
   const [loginForm, setLoginForm] = useState(initialLoginForm);
   const [registerForm, setRegisterForm] = useState(initialRegisterForm);
@@ -247,7 +251,8 @@ function HomePage() {
     const uniqueGenres = new Map();
     displayMovies.forEach((movie) => {
       splitGenres(movie.genre).forEach((genre) => {
-        uniqueGenres.set(normalizeSearchValue(genre), genre);
+        const label = normalizeClientText(genre);
+        uniqueGenres.set(normalizeSearchValue(label), label);
       });
     });
     return Array.from(uniqueGenres.values()).sort((a, b) => a.localeCompare(b, "vi"));
@@ -910,13 +915,13 @@ function HomePage() {
                 </div>
 
                 <div className="movie-info">
-                  <h3>{movie.title}</h3>
+                  <h3>{normalizeClientText(movie.title)}</h3>
                   <p className="duration">{formatDuration(movie.duration)}</p>
                   <p>
-                    Thể loại: <a href="#movies">{movie.genre || "Đang cập nhật"}</a>
+                    Thể loại: <a href="#movies">{normalizeClientText(movie.genre || "Đang cập nhật")}</a>
                   </p>
-                  <p>Đạo diễn: {movie.director || "Đang cập nhật"}</p>
-                  <p>Diễn viên: {movie.cast || movie.actors || "Đang cập nhật"}</p>
+                  <p>Đạo diễn: {normalizeClientText(movie.director || "Đang cập nhật")}</p>
+                  <p>Diễn viên: {normalizeClientText(movie.cast || movie.actors || "Đang cập nhật")}</p>
                   <p className="movie-rating">
                     Rated: <span>{rating}</span> - {getAgeDescription(rating)}
                   </p>
@@ -972,13 +977,13 @@ function HomePage() {
                   )}
                 </div>
                 <div className="schedule-detail-info">
-                  <h2>{selectedScheduleMovie.title}</h2>
+                  <h2>{normalizeClientText(selectedScheduleMovie.title)}</h2>
                   <p className="duration">{formatDuration(selectedScheduleMovie.duration)}</p>
                   <p>
-                    Thể loại: <a href="#movies">{selectedScheduleMovie.genre || "Đang cập nhật"}</a>
+                    Thể loại: <a href="#movies">{normalizeClientText(selectedScheduleMovie.genre || "Đang cập nhật")}</a>
                   </p>
-                  <p>Đạo diễn: {selectedScheduleMovie.director || "Đang cập nhật"}</p>
-                  <p>Diễn viên: {selectedScheduleMovie.cast || selectedScheduleMovie.actors || "Đang cập nhật"}</p>
+                  <p>Đạo diễn: {normalizeClientText(selectedScheduleMovie.director || "Đang cập nhật")}</p>
+                  <p>Diễn viên: {normalizeClientText(selectedScheduleMovie.cast || selectedScheduleMovie.actors || "Đang cập nhật")}</p>
                   <p className="movie-rating">
                     Giới hạn độ tuổi: <span>{getAgeRating(selectedScheduleMovie)}</span> -{" "}
                     {getAgeDescription(getAgeRating(selectedScheduleMovie))}
@@ -1044,8 +1049,8 @@ function HomePage() {
               <div className="schedule-row" key={group.key}>
                 <div className="schedule-row-title">
                   {scheduleMode === "movie"
-                    ? group.theater?.name || `Ráº¡p #${group.times[0]?.theaterId}`
-                    : group.movie?.title || group.times[0]?.movieName}
+                    ? normalizeClientText(group.theater?.name || `Rạp #${group.times[0]?.theaterId}`)
+                    : normalizeClientText(group.movie?.title || group.times[0]?.movieName)}
                 </div>
                 <div className="schedule-row-times">
                   <strong>{group.formatType}</strong>
@@ -1069,10 +1074,7 @@ function HomePage() {
         )}
       </section>
 
-      <section className="client-placeholder" id="news">
-        <h2>Tin tức / Sự kiện</h2>
-        <p>Cập nhật khuyến mãi, sự kiện điện ảnh và thông tin rạp mới nhất.</p>
-      </section>
+      <ClientNewsEventsSection />
     </main>
   );
 
@@ -1081,74 +1083,89 @@ function HomePage() {
       <section className="account-card">
         <aside className="account-sidebar">
           <h2>{auth?.fullName || "Thành viên"}</h2>
-          <button type="button" className="active">
+          <button type="button" className={accountTab === "profile" ? "active" : ""} onClick={() => setAccountTab("profile")}>
             🏠 Tài khoản
           </button>
-          <button type="button">🔑 Mật khẩu</button>
-          <button type="button">↺ Lịch sử giao dịch</button>
+          <button type="button" className={accountTab === "password" ? "active" : ""} onClick={() => setAccountTab("password")}>🔑 Mật khẩu</button>
+          <button type="button" className={accountTab === "history" ? "active" : ""} onClick={() => setAccountTab("history")}>↺ Lịch sử giao dịch</button>
         </aside>
 
         <div className="account-content">
-          <div className="member-card">
-            <h1>Thẻ thành viên</h1>
-            <div className="barcode" aria-label="Mã thành viên">
-              {Array.from({ length: 36 }).map((_, index) => (
-                <span key={index} style={{ width: index % 4 === 0 ? 4 : 2 }} />
-              ))}
-            </div>
-            <p>{memberCode}</p>
-          </div>
-
-          <div className="profile-form">
-            <label>
-              <span>Họ tên</span>
-              <input value={auth?.fullName || ""} readOnly />
-            </label>
-
-            <div className="profile-row">
-              <label>
-                <span>Email</span>
-                <input value={auth?.email || ""} readOnly />
-              </label>
-              <label>
-                <span>Số điện thoại</span>
-                <input value={auth?.phone || ""} readOnly />
-              </label>
-            </div>
-
-            {auth?.emailVerified === false && (
-              <div className="verify-note">
-                <div>
-                  <strong>Xác nhận email để nhận ưu đãi</strong>
-                  <span>Bạn vẫn có thể dùng website bình thường. Email chỉ cần xác nhận khi muốn nhận khuyến mãi và ưu đãi thành viên.</span>
+          {accountTab === "profile" && (
+            <>
+              <div className="member-card">
+                <h1>Thẻ thành viên</h1>
+                <div className="barcode" aria-label="Mã thành viên">
+                  {Array.from({ length: 36 }).map((_, index) => (
+                    <span key={index} style={{ width: index % 4 === 0 ? 4 : 2 }} />
+                  ))}
                 </div>
-                <button type="button" onClick={handleResendVerificationEmail} disabled={verificationSending}>
-                  {verificationSending ? "Đang gửi..." : "Gửi email xác nhận"}
-                </button>
+                <p>{memberCode}</p>
               </div>
-            )}
 
-            {verificationMessage && <p className="verify-message">{verificationMessage}</p>}
-          </div>
+              <div className="profile-form">
+                <label>
+                  <span>Họ tên</span>
+                  <input value={auth?.fullName || ""} readOnly />
+                </label>
 
-          <div className="member-stats">
-            <div>
-              <strong>Cấp độ thẻ</strong>
-              <span>Member</span>
-            </div>
-            <div>
-              <strong>Tá»•ng chi tiÃªu</strong>
-              <span>0 VNĐ</span>
-            </div>
-            <div>
-              <strong>Điểm</strong>
-              <span>0 P</span>
-            </div>
-          </div>
+                <div className="profile-row">
+                  <label>
+                    <span>Email</span>
+                    <input value={auth?.email || ""} readOnly />
+                  </label>
+                  <label>
+                    <span>Số điện thoại</span>
+                    <input value={auth?.phone || ""} readOnly />
+                  </label>
+                </div>
 
-          <button type="button" className="account-update">
-            Cáº­p nháº­t
-          </button>
+                {auth?.emailVerified === false && (
+                  <div className="verify-note">
+                    <div>
+                      <strong>Xác nhận email để nhận ưu đãi</strong>
+                      <span>Bạn vẫn có thể dùng website bình thường. Email chỉ cần xác nhận khi muốn nhận khuyến mãi và ưu đãi thành viên.</span>
+                    </div>
+                    <button type="button" onClick={handleResendVerificationEmail} disabled={verificationSending}>
+                      {verificationSending ? "Đang gửi..." : "Gửi email xác nhận"}
+                    </button>
+                  </div>
+                )}
+
+                {verificationMessage && <p className="verify-message">{verificationMessage}</p>}
+              </div>
+
+              <div className="member-stats">
+                <div>
+                  <strong>Cấp độ thẻ</strong>
+                  <span>Member</span>
+                </div>
+                <div>
+                  <strong>Tổng chi tiêu</strong>
+                  <span>0 VNĐ</span>
+                </div>
+                <div>
+                  <strong>Điểm</strong>
+                  <span>0 P</span>
+                </div>
+              </div>
+
+              <button type="button" className="account-update">
+                Cập nhật
+              </button>
+            </>
+          )}
+
+          {accountTab === "password" && (
+            <section className="account-password-placeholder">
+              <h2>Đổi mật khẩu</h2>
+              <p>Chức năng đổi mật khẩu sẽ được cấu hình ở bước tài khoản tiếp theo.</p>
+            </section>
+          )}
+
+          {accountTab === "history" && (
+            <ClientTransactionHistory auth={auth} />
+          )}
         </div>
       </section>
     </main>
@@ -1199,7 +1216,7 @@ function HomePage() {
     return (
       <main className="client-main movie-detail-page">
         <button type="button" className="movie-detail-back" onClick={() => setView("home")}>
-          â† Quay láº¡i danh sÃ¡ch phim
+          ← Quay lại danh sách phim
         </button>
 
         <section className="movie-detail-hero">
@@ -1212,23 +1229,23 @@ function HomePage() {
           </div>
 
           <div className="movie-detail-content">
-            <h1>{selectedMovie.title}</h1>
+            <h1>{normalizeClientText(selectedMovie.title)}</h1>
             <p className="duration">{formatDuration(selectedMovie.duration)}</p>
             <p>
-              <strong>Thể loại:</strong> {selectedMovie.genre || "Đang cập nhật"}
+              <strong>Thể loại:</strong> {normalizeClientText(selectedMovie.genre || "Đang cập nhật")}
             </p>
             <p>
-              <strong>Đạo diễn:</strong> {selectedMovie.director || "Đang cập nhật"}
+              <strong>Đạo diễn:</strong> {normalizeClientText(selectedMovie.director || "Đang cập nhật")}
             </p>
             <p>
-              <strong>Diễn viên:</strong> {selectedMovie.cast || selectedMovie.actors || "Đang cập nhật"}
+              <strong>Diễn viên:</strong> {normalizeClientText(selectedMovie.cast || selectedMovie.actors || "Đang cập nhật")}
             </p>
             <p className="movie-rating">
               <strong>Giới hạn độ tuổi:</strong> <span>{rating}</span> - {getAgeDescription(rating)}
             </p>
             <div className="movie-detail-description">
-              <h2>Ná»™i dung</h2>
-              <p>{selectedMovie.description || "Nội dung phim đang được cập nhật."}</p>
+              <h2>Nội dung</h2>
+              <p>{normalizeClientText(selectedMovie.description || "Nội dung phim đang được cập nhật.")}</p>
             </div>
           </div>
         </section>
@@ -1276,7 +1293,7 @@ function HomePage() {
                 detailGroups.map((group) => (
                   <div className="schedule-row" key={group.key}>
                     <div className="schedule-row-title">
-                      {group.theater?.name || `Ráº¡p #${group.times[0]?.theaterId}`}
+                      {normalizeClientText(group.theater?.name || `Rạp #${group.times[0]?.theaterId}`)}
                     </div>
                     <div className="schedule-row-times">
                       <strong>{group.formatType}</strong>
@@ -1303,7 +1320,7 @@ function HomePage() {
 
     const rating = getAgeRating(bookingMovie);
     const showtimeLabel = `${bookingShowtime.showDate || ""} ${formatShowtimeTime(bookingShowtime.startTime)}`;
-    const roomName = bookingShowtime.roomName || `PhÃ²ng #${bookingShowtime.roomId}`;
+    const roomName = normalizeClientText(bookingShowtime.roomName || `Phòng #${bookingShowtime.roomId}`);
     const selectedSeatCodes = selectedBookingSeats.map((seat) => seat.seatCode).join(", ");
     const selectedComboText = selectedBookingCombos.map((combo) => `${combo.name} x${combo.quantity}`).join(", ");
 
@@ -1318,7 +1335,7 @@ function HomePage() {
             <div className="booking-side-poster">
               {getPoster(bookingMovie) ? <img src={getPoster(bookingMovie)} alt={bookingMovie.title} /> : <span>No Image</span>}
             </div>
-            <h2>{bookingMovie.title}</h2>
+            <h2>{normalizeClientText(bookingMovie.title)}</h2>
             <p>
               Suất chiếu: <strong>{showtimeLabel}</strong>
             </p>
@@ -1409,7 +1426,7 @@ function HomePage() {
                               disabled={sold || maintenance}
                               title={`${seat.seatCode} - ${formatMoney(seatPrice(seat))}`}
                             >
-                              {maintenance ? "X" : selected ? "âœ“" : seat.seatCode}
+                            {maintenance ? "X" : selected ? "✓" : seat.seatCode}
                             </button>
                           );
                         })}
@@ -1420,7 +1437,7 @@ function HomePage() {
 
                 <div className="client-booking-actions">
                   <button type="button" disabled={selectedBookingSeats.length === 0 || bookingLoading} onClick={() => setBookingStep(2)}>
-                    Tiáº¿p theo
+                    Tiếp theo
                   </button>
                 </div>
               </div>
@@ -1446,7 +1463,7 @@ function HomePage() {
                           </p>
                           <div className="combo-quantity">
                             <button type="button" onClick={() => updateBookingComboQuantity(combo.id, -1)}>
-                              âˆ’
+                              −
                             </button>
                             <input value={bookingComboQuantities[combo.id] || 0} readOnly />
                             <button type="button" onClick={() => updateBookingComboQuantity(combo.id, 1)}>
@@ -1461,10 +1478,10 @@ function HomePage() {
 
                 <div className="client-booking-actions">
                   <button type="button" className="secondary" onClick={() => setBookingStep(1)}>
-                    Trá»Ÿ láº¡i
+                    Trở lại
                   </button>
                   <button type="button" disabled={bookingLoading} onClick={() => setBookingStep(3)}>
-                    Tiáº¿p theo
+                    Tiếp theo
                   </button>
                 </div>
               </div>
@@ -1670,10 +1687,7 @@ function HomePage() {
             : renderHome()}
       {renderFilterPanel()}
 
-      <footer className="client-footer" id="support">
-        <div>Â© HMCinema</div>
-        <div>Liên hệ / Hỗ trợ khách hàng</div>
-      </footer>
+      <ClientFooter />
 
       <ClientAuthModal
         authMode={authMode}
