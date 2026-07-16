@@ -39,12 +39,21 @@ export const movieMatchesTab = (movie, tab) => {
   return status === "NOW_SHOWING" || status === "ACTIVE" || !status;
 };
 
+const mediaBaseUrl = (import.meta.env.VITE_MEDIA_BASE_URL || "http://localhost:18081").replace(/\/$/, "");
+
+export const resolveMediaUrl = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw) || raw.startsWith("data:") || raw.startsWith("blob:")) return raw;
+
+  const normalized = raw.startsWith("/") ? raw : `/${raw}`;
+  if (normalized.startsWith("/uploads/")) return `${mediaBaseUrl}${normalized}`;
+  return normalized;
+};
+
 export const getPoster = (movie) => {
   const value = movie.posterUrl || movie.imageUrl || movie.thumbnailUrl || movie.poster || "";
-  if (!value) return "";
-  if (/^https?:\/\//i.test(value) || value.startsWith("/")) return value;
-  if (value.startsWith("uploads/") || value.startsWith("media/")) return `/${value}`;
-  return value;
+  return resolveMediaUrl(value);
 };
 
 export const getTrailerUrl = (movie) => movie.trailerUrl || movie.trailer || movie.videoUrl || "";

@@ -38,6 +38,7 @@ import {
   normalizeSearchValue,
   parseLocalDate,
   readClientAuth,
+  resolveMediaUrl,
   saveClientAuth,
   seatPrice,
   splitGenres,
@@ -101,12 +102,17 @@ function HomePage() {
       }
 
       if (adResult.status === "fulfilled") {
-        const onlineHomeBanners = (adResult.value.data || []).filter(
-          (ad) =>
-            String(ad.status || "").toUpperCase() !== "OFFLINE" &&
-            String(ad.placement || "").toUpperCase().includes("HOME") &&
-            ad.imageUrl,
-        );
+        const todayValue = toDateInputValue(new Date());
+        const onlineHomeBanners = (adResult.value.data || [])
+          .filter((ad) => {
+            const status = String(ad.status || "").toUpperCase();
+            const placement = String(ad.placement || "").toUpperCase();
+            const started = !ad.startDate || String(ad.startDate) <= todayValue;
+            const notExpired = !ad.endDate || String(ad.endDate) >= todayValue;
+            return status === "ONLINE" && placement === "HOME_BANNER" && started && notExpired && ad.imageUrl;
+          })
+          .sort((left, right) => Number(left.displayOrder || 0) - Number(right.displayOrder || 0))
+          .map((ad) => ({ ...ad, imageUrl: resolveMediaUrl(ad.imageUrl) }));
         setBanners(onlineHomeBanners);
       }
 
@@ -334,6 +340,14 @@ function HomePage() {
       window.clearInterval(intervalId);
     };
   }, [bookingShowtime?.id, view]);
+
+  useEffect(() => {
+    if (view !== "home" || displayBanners.length <= 1) return undefined;
+    const intervalId = window.setInterval(() => {
+      setBannerIndex((current) => (current + 1) % displayBanners.length);
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [displayBanners.length, view]);
 
   const changeBanner = (direction) => {
     setBannerIndex((current) => {
@@ -816,9 +830,28 @@ function HomePage() {
           ‹
         </button>
         <img src={currentBanner.imageUrl} alt={currentBanner.title || "Cinema banner"} />
+        {currentBanner.title && (
+          <div className="hero-caption">
+            <span>HMCinema</span>
+            <strong>{currentBanner.title}</strong>
+          </div>
+        )}
         <button type="button" className="hero-arrow right" onClick={() => changeBanner(1)}>
           ›
         </button>
+        {displayBanners.length > 1 && (
+          <div className="hero-dots" aria-label="Chọn banner">
+            {displayBanners.map((banner, index) => (
+              <button
+                key={banner.id || banner.imageUrl || index}
+                type="button"
+                className={index === bannerIndex % displayBanners.length ? "active" : ""}
+                aria-label={`Banner ${index + 1}`}
+                onClick={() => setBannerIndex(index)}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="client-movies" id="movies">

@@ -54,6 +54,12 @@ CREATE TABLE `advertisements` (
 
 LOCK TABLES `advertisements` WRITE;
 /*!40000 ALTER TABLE `advertisements` DISABLE KEYS */;
+INSERT INTO `advertisements` VALUES
+(1,'2026-07-16 00:00:00.000000','Banner phim nổi bật 1 hiển thị ở trang chủ.',1,'2026-12-31','http://localhost:18081/uploads/movies/bane1.jpg','HOME_BANNER','2026-07-16','ONLINE','/','Banner phim nổi bật 1','2026-07-16 00:00:00.000000'),
+(2,'2026-07-16 00:00:00.000000','Banner phim nổi bật 2 hiển thị ở trang chủ.',2,'2026-12-31','http://localhost:18081/uploads/movies/bane2.jpg','HOME_BANNER','2026-07-16','ONLINE','/','Banner phim nổi bật 2','2026-07-16 00:00:00.000000'),
+(3,'2026-07-16 00:00:00.000000','Banner phim nổi bật 3 hiển thị ở trang chủ.',3,'2026-12-31','http://localhost:18081/uploads/movies/bane3.jpg','HOME_BANNER','2026-07-16','ONLINE','/','Banner phim nổi bật 3','2026-07-16 00:00:00.000000'),
+(4,'2026-07-16 00:00:00.000000','Banner phim nổi bật 4 hiển thị ở trang chủ.',4,'2026-12-31','http://localhost:18081/uploads/movies/637e3fea-f1ad-4819-ae78-6f1b7840a04a.jfif','HOME_BANNER','2026-07-16','ONLINE','/','Banner phim nổi bật 4','2026-07-16 00:00:00.000000'),
+(5,'2026-07-16 00:00:00.000000','Banner phim nổi bật 5 hiển thị ở trang chủ.',5,'2026-12-31','http://localhost:18081/uploads/movies/e96e5bac-c849-4de5-ad37-96f50ad69c25.jfif','HOME_BANNER','2026-07-16','ONLINE','/','Banner phim nổi bật 5','2026-07-16 00:00:00.000000');
 /*!40000 ALTER TABLE `advertisements` ENABLE KEYS */;
 UNLOCK TABLES;
 
