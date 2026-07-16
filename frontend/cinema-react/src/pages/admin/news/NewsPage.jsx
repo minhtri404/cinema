@@ -9,6 +9,8 @@ import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import {
   createNews,
   deleteNews,
@@ -114,6 +116,7 @@ function NewsPage() {
       return matchesKeyword && (!statusFilter || article.status === statusFilter);
     });
   }, [articles, keyword, statusFilter]);
+  const pagination = usePagination(filteredArticles, 10);
 
   const resetImage = () => {
     if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
@@ -304,7 +307,7 @@ function NewsPage() {
                 ) : filteredArticles.length === 0 ? (
                   <tr><td colSpan="8" className="news-empty">Chưa có tin tức phù hợp.</td></tr>
                 ) : (
-                  filteredArticles.map((article) => (
+                  pagination.paginatedItems.map((article) => (
                     <tr key={article.id}>
                       <td className="news-title-cell">{article.title}</td>
                       <td>
@@ -314,8 +317,7 @@ function NewsPage() {
                             src={article.imageUrl}
                             alt={article.title}
                             onError={(event) => {
-                              event.currentTarget.src =
-                                "https://placehold.co/420x260/e2e8f0/64748b?text=Kh%C3%B4ng+c%C3%B3+%E1%BA%A3nh";
+                              event.currentTarget.hidden = true;
                             }}
                           />
                         ) : (
@@ -351,6 +353,7 @@ function NewsPage() {
                 )}
               </tbody>
             </table>
+            <Pagination {...pagination} />
           </div>
         </div>
       </section>

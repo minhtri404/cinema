@@ -6,7 +6,10 @@ import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import { createFood, deleteFood, getFoods, updateFood, updateFoodStock, uploadComboImage } from "../../../api/foodApi";
+import { cleanupMediaByUrl } from "../../../api/mediaApi";
 import { inventoryStatusLabel } from "../../../utils/displayLabels";
 import "../../../styles/combo.css";
 
@@ -72,6 +75,7 @@ function ComboPage() {
       return matchesKeyword && (!statusFilter || combo.status === statusFilter);
     });
   }, [combos, keyword, statusFilter]);
+  const pagination = usePagination(filteredCombos, 8);
 
   const summary = useMemo(() => {
     const active = combos.filter((combo) => combo.status === "ACTIVE").length;
@@ -169,16 +173,23 @@ function ComboPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const previousImageUrl = editingCombo?.imageUrl || "";
+    let uploadedImageUrl = "";
+
     try {
       setSaving(true);
       let imageUrl = form.imageUrl;
       if (imageFile) {
         const uploadResponse = await uploadComboImage(imageFile);
         imageUrl = uploadResponse.data?.url || "";
+        uploadedImageUrl = imageUrl;
       }
       const payload = { ...payloadFromForm(), imageUrl };
       if (editingCombo) {
         await updateFood(editingCombo.id, payload);
+        if (previousImageUrl && previousImageUrl !== imageUrl) {
+          await cleanupMediaByUrl(previousImageUrl);
+        }
         alert("Cập nhật combo thành công.");
       } else {
         await createFood(payload);
@@ -187,6 +198,7 @@ function ComboPage() {
       closeModal();
       await loadCombos();
     } catch (error) {
+      if (uploadedImageUrl) await cleanupMediaByUrl(uploadedImageUrl);
       alert(errorMessage(error, "Lưu combo thất bại."));
     } finally {
       setSaving(false);
@@ -197,6 +209,7 @@ function ComboPage() {
     if (!window.confirm(`Xóa combo "${combo.name}"?`)) return;
     try {
       await deleteFood(combo.id);
+      await cleanupMediaByUrl(combo.imageUrl);
       setCombos((current) => current.filter((item) => item.id !== combo.id));
       alert("Xóa combo thành công.");
     } catch (error) {
@@ -278,7 +291,7 @@ function ComboPage() {
           ) : filteredCombos.length === 0 ? (
             <div className="combo-empty">Chưa có combo phù hợp.</div>
           ) : (
-            filteredCombos.map((combo) => {
+            pagination.paginatedItems.map((combo) => {
               const lowStock = Number(combo.stockQuantity || 0) <= Number(combo.lowStockThreshold || 0);
               return (
                 <article className="combo-item" key={combo.id}>
@@ -329,6 +342,7 @@ function ComboPage() {
             })
           )}
         </div>
+        <Pagination {...pagination} />
       </div>
 
       {modalOpen && (

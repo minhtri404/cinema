@@ -4,7 +4,9 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
-import { createUser, deleteUser, getUsers, updateUser } from "../../../api/userApi";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
+import { createUser, deleteUser, getStaffUsers, updateUser } from "../../../api/userApi";
 import "../../../styles/staff.css";
 
 const emptyForm = () => ({
@@ -12,7 +14,7 @@ const emptyForm = () => ({
   email: "",
   phone: "",
   role: "STAFF",
-  password: "demo_password_change_me",
+  password: "",
 });
 
 const errorMessage = (error, fallback) => {
@@ -22,12 +24,14 @@ const errorMessage = (error, fallback) => {
 };
 
 const roleLabel = (role) => {
-  if (role === "ADMIN") return "Quản trị";
+  if (role === "ADMIN") return "Quản trị viên";
   if (role === "STAFF") return "Nhân viên";
   return role || "—";
 };
 
 function StaffPage() {
+  const auth = JSON.parse(localStorage.getItem("auth") || sessionStorage.getItem("auth") || "{}");
+  const currentUserId = Number(auth.userId);
   const [users, setUsers] = useState([]);
   const [keyword, setKeyword] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
@@ -40,7 +44,7 @@ function StaffPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await getUsers();
+      const response = await getStaffUsers();
       setUsers(response.data || []);
     } catch (error) {
       alert(errorMessage(error, "Không tải được danh sách nhân viên."));
@@ -54,7 +58,7 @@ function StaffPage() {
   }, []);
 
   const staffAccounts = useMemo(
-    () => users.filter((user) => ["ADMIN", "STAFF"].includes(user.role)),
+    () => users.filter((user) => ["ADMIN", "STAFF"].includes(String(user.role || "").toUpperCase())),
     [users],
   );
 
@@ -70,6 +74,7 @@ function StaffPage() {
       return matchesKeyword && (!roleFilter || user.role === roleFilter);
     });
   }, [staffAccounts, keyword, roleFilter]);
+  const pagination = usePagination(filteredStaff, 10);
 
   const summary = useMemo(() => {
     const admins = staffAccounts.filter((user) => user.role === "ADMIN").length;
@@ -117,33 +122,48 @@ function StaffPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!editingUser && form.password.length < 6) {
+      alert("Mật khẩu phải có ít nhất 6 ký tự.");
+      return;
+    }
+    if (editingUser && form.password && form.password.length < 6) {
+      alert("Mật khẩu mới phải có ít nhất 6 ký tự.");
+      return;
+    }
+
     try {
       setSaving(true);
       if (editingUser) {
         await updateUser(editingUser.id, payloadFromForm());
-        alert("Cập nhật tài khoản nhân viên thành công.");
+        alert("Cập nhật tài khoản nội bộ thành công.");
       } else {
         await createUser(payloadFromForm());
-        alert("Thêm tài khoản nhân viên thành công.");
+        alert("Thêm tài khoản nội bộ thành công.");
       }
 
-      closeModal();
+      setEditingUser(null);
+      setForm(emptyForm());
+      setModalOpen(false);
       await loadUsers();
     } catch (error) {
-      alert(errorMessage(error, "Lưu tài khoản nhân viên thất bại."));
+      alert(errorMessage(error, "Lưu tài khoản nội bộ thất bại."));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (user) => {
+    if (Number(user.id) === currentUserId) {
+      alert("Không thể xóa tài khoản đang đăng nhập.");
+      return;
+    }
     if (!window.confirm(`Xóa tài khoản "${user.fullName}"?`)) return;
     try {
       await deleteUser(user.id);
       setUsers((current) => current.filter((item) => item.id !== user.id));
-      alert("Xóa tài khoản nhân viên thành công.");
+      alert("Xóa tài khoản nội bộ thành công.");
     } catch (error) {
-      alert(errorMessage(error, "Xóa tài khoản nhân viên thất bại."));
+      alert(errorMessage(error, "Xóa tài khoản nội bộ thất bại."));
     }
   };
 
@@ -153,12 +173,12 @@ function StaffPage() {
         <header className="staff-header">
           <div>
             <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
-            <h2>Tài khoản nhân viên</h2>
-            <p>Quản lý tài khoản admin, nhân viên rạp và quyền truy cập hệ thống.</p>
+            <h2>Nhân viên và quản trị viên</h2>
+            <p>Quản lý tài khoản nội bộ và phân quyền truy cập hệ thống.</p>
           </div>
           <button type="button" onClick={openCreate}>
             <AddRoundedIcon fontSize="small" />
-            Thêm nhân viên
+            Thêm tài khoản
           </button>
         </header>
 
@@ -168,7 +188,7 @@ function StaffPage() {
             <strong>{summary.total}</strong>
           </div>
           <div>
-            <span>Quản trị</span>
+            <span>Quản trị viên</span>
             <strong>{summary.admins}</strong>
           </div>
           <div>
@@ -190,7 +210,7 @@ function StaffPage() {
 
           <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
             <option value="">Tất cả vai trò</option>
-            <option value="ADMIN">Quản trị</option>
+            <option value="ADMIN">Quản trị viên</option>
             <option value="STAFF">Nhân viên</option>
           </select>
         </div>
@@ -214,11 +234,9 @@ function StaffPage() {
                   <td colSpan="7" className="staff-empty">Đang tải dữ liệu...</td>
                 </tr>
               ) : filteredStaff.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="staff-empty">Chưa có tài khoản nhân viên phù hợp.</td>
-                </tr>
+                <tr><td colSpan="7" className="staff-empty">Chưa có tài khoản nội bộ phù hợp.</td></tr>
               ) : (
-                filteredStaff.map((user) => (
+                pagination.paginatedItems.map((user) => (
                   <tr key={user.id}>
                     <td>
                       <div className="staff-name">
@@ -248,7 +266,7 @@ function StaffPage() {
                         <button type="button" onClick={() => openEdit(user)} title="Sửa">
                           <EditOutlinedIcon fontSize="small" />
                         </button>
-                        <button type="button" className="danger" onClick={() => handleDelete(user)} title="Xóa">
+                        <button type="button" className="danger" onClick={() => handleDelete(user)} disabled={Number(user.id) === currentUserId} title={Number(user.id) === currentUserId ? "Không thể xóa tài khoản đang đăng nhập" : "Xóa"}>
                           <DeleteOutlineRoundedIcon fontSize="small" />
                         </button>
                       </div>
@@ -258,6 +276,7 @@ function StaffPage() {
               )}
             </tbody>
           </table>
+          <Pagination {...pagination} />
         </div>
       </div>
 
@@ -266,8 +285,8 @@ function StaffPage() {
           <div className="staff-modal" onMouseDown={(event) => event.stopPropagation()}>
             <div className="staff-modal-header">
               <div>
-                <h3>{editingUser ? "Sửa tài khoản nhân viên" : "Thêm tài khoản nhân viên"}</h3>
-                <p>Mật khẩu mặc định khi tạo mới là demo_password_change_me, có thể thay đổi trong form.</p>
+                <h3>{editingUser ? "Sửa tài khoản nội bộ" : "Thêm tài khoản nội bộ"}</h3>
+                <p>Chọn vai trò nhân viên hoặc quản trị viên cho tài khoản.</p>
               </div>
               <button type="button" onClick={closeModal} aria-label="Đóng">×</button>
             </div>
@@ -288,9 +307,9 @@ function StaffPage() {
                 </label>
                 <label>
                   <span>Vai trò</span>
-                  <select name="role" value={form.role} onChange={handleChange}>
+                  <select name="role" value={form.role} onChange={handleChange} disabled={Number(editingUser?.id) === currentUserId}>
                     <option value="STAFF">Nhân viên</option>
-                    <option value="ADMIN">Quản trị</option>
+                    <option value="ADMIN">Quản trị viên</option>
                   </select>
                 </label>
                 <label className="full">
@@ -301,7 +320,8 @@ function StaffPage() {
                     value={form.password}
                     onChange={handleChange}
                     required={!editingUser}
-                    placeholder={editingUser ? "Để trống nếu không đổi mật khẩu" : "demo_password_change_me"}
+                    minLength={form.password ? 6 : undefined}
+                    placeholder={editingUser ? "Để trống nếu không đổi mật khẩu" : "Tối thiểu 6 ký tự"}
                   />
                 </label>
               </div>

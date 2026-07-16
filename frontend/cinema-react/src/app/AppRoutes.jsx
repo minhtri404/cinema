@@ -1,5 +1,10 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import HomePage from "../pages/client/HomePage";
+import ContactPage from "../pages/client/ContactPage";
+import MoviesPage from "../pages/client/MoviesPage";
+import OffersPage from "../pages/client/OffersPage";
+import SchedulePage from "../pages/client/SchedulePage";
 import VerifyEmailPage from "../pages/client/VerifyEmailPage";
 import VnpayReturnPage from "../pages/client/VnpayReturnPage";
 import LoginPage from "../pages/auth/LoginPage";
@@ -28,11 +33,26 @@ import AdvertisementPage from "../pages/admin/advertisements/AdvertisementPage";
 import TicketScanPage from "../pages/admin/ticket-scan/TicketScanPage";
 const withAdminLayout = (page) => <AdminLayout>{page}</AdminLayout>;
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
+
+  return null;
+}
+
 function AppRoutes() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/phim" element={<MoviesPage />} />
+        <Route path="/lich-chieu" element={<SchedulePage />} />
+        <Route path="/uu-dai" element={<OffersPage />} />
+        <Route path="/lien-he" element={<ContactPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/payment/vnpay-return" element={<VnpayReturnPage />} />
         <Route path="/login" element={<LoginPage />} />

@@ -213,6 +213,11 @@
   color: #e11d48;
 }
 
+.staff-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .staff-empty {
   padding: 36px !important;
   color: #64748b !important;

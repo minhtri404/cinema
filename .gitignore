@@ -19,4 +19,9 @@ backend/movie-service/uploads/events/*
 backend/movie-service/uploads/news/*
 backend/movie-service/uploads/promotions/*
 backend/movie-service/uploads/movies/*
-backend/media-service/uploads/
+backend/media-service/uploads/*
+!backend/media-service/uploads/seed/
+!backend/media-service/uploads/seed/**
+
+# Bản sao lưu cục bộ có thể chứa dữ liệu tài khoản, không đưa lên Git.
+backups/

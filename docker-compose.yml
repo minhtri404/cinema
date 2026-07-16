@@ -23,7 +23,7 @@ services:
       - "3309:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init/01-full-database.sql:/docker-entrypoint-initdb.d/01-full-database.sql:ro
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
       interval: 10s
@@ -288,7 +288,6 @@ services:
     working_dir: /app
     volumes:
       - ./backend/media-service:/app
-      - media_uploads:/app/uploads
       - maven_media:/root/.m2
     command: mvn spring-boot:run
     environment:
@@ -320,4 +319,3 @@ volumes:
   maven_payment:
   maven_notification:
   maven_media:
-  media_uploads:

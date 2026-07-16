@@ -1,4 +1,5 @@
 import axiosClient from "./axiosClient";
+import { uploadImage } from "./mediaApi";
 
 export const getAdvertisements = () => axiosClient.get("/api/advertisements");
 
@@ -11,11 +12,5 @@ export const updateAdvertisement = (id, data) =>
 export const deleteAdvertisement = (id) =>
   axiosClient.delete(`/api/advertisements/${id}`);
 
-export const uploadAdvertisementImage = (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  return axiosClient.post("/api/uploads/advertisements", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-};
+export const uploadAdvertisementImage = (file) =>
+  uploadImage(file, "ADVERTISEMENTS");

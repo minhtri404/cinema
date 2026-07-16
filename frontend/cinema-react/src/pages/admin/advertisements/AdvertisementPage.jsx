@@ -5,6 +5,8 @@ import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import {
   createAdvertisement,
   deleteAdvertisement,
@@ -12,6 +14,7 @@ import {
   updateAdvertisement,
   uploadAdvertisementImage,
 } from "../../../api/advertisementApi";
+import { cleanupMediaByUrl } from "../../../api/mediaApi";
 import { publicationStatusLabel } from "../../../utils/displayLabels";
 import "../../../styles/advertisement.css";
 
@@ -104,6 +107,7 @@ function AdvertisementPage() {
       );
     });
   }, [advertisements, keyword, statusFilter, placementFilter]);
+  const pagination = usePagination(filteredAdvertisements, 10);
 
   const resetImage = () => {
     if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
@@ -178,12 +182,16 @@ function AdvertisementPage() {
       return;
     }
 
+    const previousImageUrl = editingAd?.imageUrl || "";
+    let uploadedImageUrl = "";
+
     try {
       setSaving(true);
       let imageUrl = form.imageUrl;
       if (imageFile) {
         const uploadResponse = await uploadAdvertisementImage(imageFile);
         imageUrl = uploadResponse.data?.url || "";
+        uploadedImageUrl = imageUrl;
       }
       const payload = {
         ...form,
@@ -192,6 +200,9 @@ function AdvertisementPage() {
       };
       if (editingAd) {
         await updateAdvertisement(editingAd.id, payload);
+        if (previousImageUrl && previousImageUrl !== imageUrl) {
+          await cleanupMediaByUrl(previousImageUrl);
+        }
         alert("Cập nhật quảng cáo thành công.");
       } else {
         await createAdvertisement(payload);
@@ -200,6 +211,7 @@ function AdvertisementPage() {
       closeModal();
       await loadAdvertisements();
     } catch (error) {
+      if (uploadedImageUrl) await cleanupMediaByUrl(uploadedImageUrl);
       alert(errorMessage(error, "Lưu quảng cáo thất bại."));
     } finally {
       setSaving(false);
@@ -210,6 +222,7 @@ function AdvertisementPage() {
     if (!window.confirm(`Xóa quảng cáo "${advertisement.title}"?`)) return;
     try {
       await deleteAdvertisement(advertisement.id);
+      await cleanupMediaByUrl(advertisement.imageUrl);
       setAdvertisements((current) => current.filter((item) => item.id !== advertisement.id));
       alert("Xóa quảng cáo thành công.");
     } catch (error) {
@@ -282,7 +295,7 @@ function AdvertisementPage() {
               ) : filteredAdvertisements.length === 0 ? (
                 <tr><td colSpan="7" className="advertisement-empty">Chưa có quảng cáo phù hợp.</td></tr>
               ) : (
-                filteredAdvertisements.map((item) => (
+                pagination.paginatedItems.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <div className="advertisement-info">
@@ -318,6 +331,7 @@ function AdvertisementPage() {
               )}
             </tbody>
           </table>
+          <Pagination {...pagination} />
         </div>
       </div>
 

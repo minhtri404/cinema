@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
@@ -127,6 +129,7 @@ function ShowtimePage() {
     () => new Map(rooms.map((item) => [Number(item.id), item.name])),
     [rooms],
   );
+  const pagination = usePagination(showtimes, 10);
 
   const availableRooms = useMemo(
     () =>
@@ -354,7 +357,7 @@ function ShowtimePage() {
                     </td>
                   </tr>
                 ) : (
-                  showtimes.map((showtime) => (
+                  pagination.paginatedItems.map((showtime) => (
                     <tr key={showtime.id}>
                       <td>
                         <div className="showtime-date">
@@ -419,6 +422,7 @@ function ShowtimePage() {
                 )}
               </tbody>
             </table>
+            <Pagination {...pagination} />
           </div>
         </div>
       </section>

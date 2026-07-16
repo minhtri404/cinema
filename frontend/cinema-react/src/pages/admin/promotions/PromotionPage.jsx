@@ -4,6 +4,8 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import {
   createPromotion,
   deletePromotion,
@@ -105,6 +107,7 @@ function PromotionPage() {
       return matchesKeyword && (!statusFilter || promotion.status === statusFilter);
     });
   }, [promotions, keyword, statusFilter]);
+  const pagination = usePagination(filteredPromotions, 10);
 
   const resetImage = () => {
     if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
@@ -311,7 +314,7 @@ function PromotionPage() {
                 ) : filteredPromotions.length === 0 ? (
                   <tr><td colSpan="7" className="promotion-empty">Chưa có khuyến mãi phù hợp.</td></tr>
                 ) : (
-                  filteredPromotions.map((promotion) => (
+                  pagination.paginatedItems.map((promotion) => (
                     <tr key={promotion.id}>
                       <td>
                         <div className="promotion-info">
@@ -373,6 +376,7 @@ function PromotionPage() {
                 )}
               </tbody>
             </table>
+            <Pagination {...pagination} />
           </div>
         </div>
       </section>

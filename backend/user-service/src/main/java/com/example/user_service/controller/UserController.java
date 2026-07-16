@@ -39,6 +39,15 @@ public class UserController {
                 .toList();
     }
 
+    @GetMapping("/staff")
+    public List<UserSummary> getStaffAccounts(HttpServletRequest request) {
+        requireAdmin(request);
+        return userRepository.findAll().stream()
+                .filter(user -> "STAFF".equals(user.getRole()) || "ADMIN".equals(user.getRole()))
+                .map(UserSummary::from)
+                .toList();
+    }
+
     @GetMapping("/{id}")
     public User getById(@PathVariable Long id, HttpServletRequest request) {
         requireOwnerOrStaffOrAdmin(id, request);

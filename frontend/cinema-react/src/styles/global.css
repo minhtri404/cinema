@@ -27,6 +27,72 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.app-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 0 6px;
+}
+
+.app-pagination p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.app-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-pagination button,
+.app-pagination > div > span {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid #d9dce2;
+  border-radius: 8px;
+  background: #fff;
+  color: #24262b;
+  font-weight: 700;
+}
+
+.app-pagination button {
+  cursor: pointer;
+}
+
+.app-pagination button:hover:not(:disabled),
+.app-pagination button.active {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
+}
+
+.app-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.app-pagination > div > span {
+  border-color: transparent;
+  background: transparent;
+}
+
+@media (max-width: 640px) {
+  .app-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .app-pagination > div {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
 #root {
   min-height: 100svh;
 }

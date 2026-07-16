@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import { Link } from "react-router-dom";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -83,6 +85,7 @@ function TheaterListPage() {
       );
     });
   }, [theaters, keyword]);
+  const pagination = usePagination(filteredTheaters, 10);
 
   const roomsByTheaterId = useMemo(() => {
     return rooms.reduce((groups, room) => {
@@ -230,7 +233,7 @@ function TheaterListPage() {
 
             <tbody>
               {filteredTheaters.length > 0 ? (
-                filteredTheaters.map((theater) => {
+                pagination.paginatedItems.map((theater) => {
                   const theaterRooms = roomsByTheaterId[String(theater.id)] || [];
 
                   return (
@@ -305,6 +308,7 @@ function TheaterListPage() {
               )}
             </tbody>
             </table>
+            <Pagination {...pagination} />
           </div>
         )}
       </div>

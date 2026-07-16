@@ -4,6 +4,8 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import {
   createEvent,
   deleteEvent,
@@ -110,6 +112,7 @@ function EventPage() {
       return matchesKeyword && matchesStatus;
     });
   }, [events, keyword, statusFilter]);
+  const pagination = usePagination(filteredEvents, 10);
 
   const resetImage = () => {
     if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
@@ -292,7 +295,7 @@ function EventPage() {
                     <td colSpan="8" className="event-empty">Chưa có sự kiện phù hợp.</td>
                   </tr>
                 ) : (
-                  filteredEvents.map((event) => {
+                  pagination.paginatedItems.map((event) => {
                     const effectiveStatus = getEffectiveStatus(event);
                     return (
                       <tr key={event.id}>
@@ -304,8 +307,7 @@ function EventPage() {
                               src={event.imageUrl}
                               alt={event.title}
                               onError={(e) => {
-                                e.currentTarget.src =
-                                  "https://placehold.co/320x160/e2e8f0/64748b?text=Kh%C3%B4ng+c%C3%B3+%E1%BA%A3nh";
+                                e.currentTarget.hidden = true;
                               }}
                             />
                           ) : (
@@ -345,6 +347,7 @@ function EventPage() {
                 )}
               </tbody>
             </table>
+            <Pagination {...pagination} />
           </div>
         </div>
       </section>

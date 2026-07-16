@@ -12,6 +12,8 @@ import WeekendOutlinedIcon from "@mui/icons-material/WeekendOutlined";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { BarcodeFormat, QRCodeWriter } from "@zxing/library";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import { createBooking, cancelBooking, getBookings, payBooking, useTicket } from "../../../api/bookingApi";
 import { getFoods } from "../../../api/foodApi";
 import { getMovies } from "../../../api/movieApi";
@@ -19,6 +21,7 @@ import { getRooms } from "../../../api/roomApi";
 import { getSeatsByRoom } from "../../../api/seatApi";
 import { getShowtimes } from "../../../api/showtimeApi";
 import { getTheaters } from "../../../api/theaterApi";
+import { ticketStatusLabel } from "../../../utils/displayLabels";
 import "../../../styles/booking.css";
 
 const money = (value) => `${Number(value || 0).toLocaleString("vi-VN")}đ`;
@@ -303,6 +306,7 @@ function BookingPage() {
       return matchesKeyword && matchesTab && (!statusFilter || booking.status === statusFilter);
     });
   }, [bookings, keyword, statusFilter, ticketTab]);
+  const pagination = usePagination(filteredBookings, 10);
 
   const summary = useMemo(() => {
     const paid = bookings.filter((booking) => booking.status === "PAID");
@@ -319,7 +323,7 @@ function BookingPage() {
   const ticketTabs = [
     { value: "all", label: "Tất cả vé", count: summary.total },
     { value: "counter", label: "Vé đã bán tại quầy", count: summary.counter },
-    { value: "online", label: "Vé online", count: summary.online },
+    { value: "online", label: "Vé trực tuyến", count: summary.online },
   ];
 
   const groupedShowtimes = useMemo(() => {
@@ -399,7 +403,7 @@ function BookingPage() {
     try {
       await useTicket(booking.id);
       await loadBookings();
-      alert("Đã cập nhật vé thành USED.");
+      alert("Đã cập nhật vé sang trạng thái đã sử dụng.");
     } catch (error) {
       alert(errorMessage(error, "Cập nhật vé thất bại."));
     }
@@ -485,7 +489,7 @@ function BookingPage() {
     <div className="booking-card">
       <header className="booking-header">
         <div>
-          <span className="page-label">CINEMA MANAGEMENT</span>
+          <span className="page-label">QUẢN LÝ RẠP CHIẾU</span>
           <h2>Vé & Booking</h2>
           <p>Quản lý đơn đặt vé, thanh toán, mã vé và trạng thái sử dụng.</p>
         </div>
@@ -531,9 +535,9 @@ function BookingPage() {
 
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
           <option value="">Tất cả trạng thái</option>
-          <option value="PENDING">PENDING</option>
-          <option value="PAID">PAID</option>
-          <option value="CANCELLED">CANCELLED</option>
+          <option value="PENDING">Chờ thanh toán</option>
+          <option value="PAID">Đã thanh toán</option>
+          <option value="CANCELLED">Đã hủy</option>
           <option value="EXPIRED">EXPIRED</option>
         </select>
       </div>
@@ -558,7 +562,7 @@ function BookingPage() {
             ) : filteredBookings.length === 0 ? (
               <tr><td colSpan="8" className="booking-empty">Chưa có vé phù hợp.</td></tr>
             ) : (
-              filteredBookings.map((booking) => (
+              pagination.paginatedItems.map((booking) => (
                 <tr key={booking.id}>
                   <td>
                     <div className="booking-code">
@@ -569,14 +573,14 @@ function BookingPage() {
                       </div>
                     </div>
                   </td>
-                  <td><strong>{booking.customerName || `User #${booking.userId}`}</strong><small>{booking.customerEmail || booking.customerPhone || "—"}</small></td>
-                  <td><strong>{booking.movieTitle || `Showtime #${booking.showtimeId}`}</strong><small>{showtimeText(booking)}</small></td>
+                  <td><strong>{booking.customerName || `Khách hàng #${booking.userId}`}</strong><small>{booking.customerEmail || booking.customerPhone || "—"}</small></td>
+                  <td><strong>{booking.movieTitle || `Suất chiếu #${booking.showtimeId}`}</strong><small>{showtimeText(booking)}</small></td>
                   <td><strong>{booking.theaterName || "—"}</strong><small>{booking.roomName || "—"}</small></td>
                   <td>{seatText(booking)}</td>
                   <td><strong>{money(booking.totalAmount)}</strong><small>Vé {money(booking.ticketAmount)} · Combo {money(booking.foodAmount)}</small></td>
                   <td>
                     <span className={`booking-status ${booking.status?.toLowerCase()}`}>{booking.status}</span>
-                    {booking.ticket?.status && <small className="ticket-status">Ticket: {booking.ticket.status}</small>}
+                    {booking.ticket?.status && <small className="ticket-status">Trạng thái vé: {ticketStatusLabel(booking.ticket.status)}</small>}
                   </td>
                   <td>
                     <div className="booking-actions">
@@ -594,6 +598,7 @@ function BookingPage() {
             )}
           </tbody>
         </table>
+        <Pagination {...pagination} />
       </div>
     </div>
   );
@@ -784,7 +789,7 @@ function BookingPage() {
             <div className="booking-modal-header">
               <div>
                 <h3>Chi tiết vé</h3>
-                <p>{selectedBooking.bookingCode} · {selectedBooking.ticket?.ticketCode || "Chưa có ticket"}</p>
+                <p>{selectedBooking.bookingCode} · {selectedBooking.ticket?.ticketCode || "Chưa có mã vé"}</p>
               </div>
               <button type="button" onClick={() => setSelectedBooking(null)} aria-label="Đóng">×</button>
             </div>
@@ -839,7 +844,7 @@ function BookingPage() {
                 <span />
               </div>
             </div>
-            <p>{scannerStatus || "Please align the barcode or QR code in the frame to scan it."}</p>
+            <p>{scannerStatus || "Đưa mã vạch hoặc mã QR vào giữa khung để quét."}</p>
             <label className="scanner-manual">
               <span>Nhập mã thủ công nếu camera không quét được</span>
               <input
@@ -864,7 +869,7 @@ function BookingPage() {
             <label><span>Khách đưa</span><input type="number" value={cashGiven} onChange={(event) => setCashGiven(event.target.value)} autoFocus /></label>
             <label><span>Trả khách</span><input value={changeAmount || 0} readOnly /></label>
             <div className="cash-actions">
-              <button type="button" className="secondary" onClick={() => setCashModalOpen(false)}>Close</button>
+              <button type="button" className="secondary" onClick={() => setCashModalOpen(false)}>Đóng</button>
               <button type="button" disabled={processing || changeAmount < 0} onClick={() => completePayment("CASH")}>Thanh toán</button>
             </div>
           </div>

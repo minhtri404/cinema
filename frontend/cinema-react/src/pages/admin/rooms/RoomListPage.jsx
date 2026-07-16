@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import { Link } from "react-router-dom";
 import MeetingRoomOutlinedIcon from "@mui/icons-material/MeetingRoomOutlined";
 import EventSeatOutlinedIcon from "@mui/icons-material/EventSeatOutlined";
@@ -96,6 +98,7 @@ function RoomListPage() {
       return matchKeyword && matchTheater;
     });
   }, [rooms, keyword, selectedTheater, getTheaterName]);
+  const pagination = usePagination(filteredRooms, 10);
 
   const openCreateModal = () => {
     setEditingRoom(null);
@@ -262,7 +265,7 @@ function RoomListPage() {
 
               <tbody>
                 {filteredRooms.length > 0 ? (
-                  filteredRooms.map((room) => (
+                  pagination.paginatedItems.map((room) => (
                     <tr key={room.id}>
                       <td>{room.id}</td>
 
@@ -332,6 +335,7 @@ function RoomListPage() {
                 )}
               </tbody>
               </table>
+              <Pagination {...pagination} />
             </div>
           )}
         </div>

@@ -10,6 +10,9 @@ public enum MediaCategory {
     EVENTS,
     NEWS,
     PROMOTIONS,
+    ADVERTISEMENTS,
+    FOODS,
+    COMBOS,
     GENERAL;
 
     public static MediaCategory from(String value) {
@@ -19,7 +22,7 @@ public enum MediaCategory {
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Nhóm ảnh chỉ gồm: movies, events, news, promotions hoặc general"
+                    "Nhóm ảnh chỉ gồm: movies, events, news, promotions, advertisements, foods, combos hoặc general"
             );
         }
     }

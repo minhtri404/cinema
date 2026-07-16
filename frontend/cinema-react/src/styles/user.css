@@ -4,7 +4,7 @@
 .user-header h2 { margin: 0; color: #1e293b; font-size: 26px; font-weight: 800; }
 .user-header p { margin: 6px 0 0; color: #64748b; }
 .user-header > button { display: inline-flex; align-items: center; gap: 7px; padding: 12px 18px; border: 0; border-radius: 10px; background: #3458d4; color: #fff; font-weight: 800; cursor: pointer; }
-.user-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
+.user-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
 .user-stats article { display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid #edf2f7; border-radius: 13px; background: #fbfdff; }
 .user-stats article > span { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border-radius: 11px; }
 .user-stats span.blue { background: #e0e7ff; color: #435bd4; }

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { getEvents } from "../../../../api/eventApi";
 import { getNews } from "../../../../api/newsApi";
+import Pagination from "../../../../components/common/Pagination";
+import usePagination from "../../../../hooks/usePagination";
 import { resolveMediaUrl, toDateInputValue } from "../clientHomeUtils";
 
 const stripHtml = (value) =>
@@ -119,8 +121,9 @@ function ClientNewsEventsSection() {
     [activeType, items],
   );
 
-  const featuredItem = filteredItems[0] || null;
-  const listItems = featuredItem ? filteredItems.slice(1) : filteredItems;
+  const pagination = usePagination(filteredItems, 7);
+  const featuredItem = pagination.paginatedItems[0] || null;
+  const listItems = featuredItem ? pagination.paginatedItems.slice(1) : pagination.paginatedItems;
   const eventCount = items.filter((item) => item.type === "event").length;
   const newsCount = items.filter((item) => item.type === "news").length;
 
@@ -128,7 +131,7 @@ function ClientNewsEventsSection() {
     <section className="client-news-events" id="news">
       <div className="news-events-header">
         <div>
-          <span className="section-kicker">HMCinema updates</span>
+          <span className="section-kicker">Tin mới từ HMCinema</span>
           <h2>Tin tức / Sự kiện</h2>
           <p>Cập nhật khuyến mãi, sự kiện điện ảnh và thông tin rạp mới nhất từ hệ thống.</p>
         </div>
@@ -205,6 +208,7 @@ function ClientNewsEventsSection() {
               ))}
             </div>
           )}
+          <Pagination {...pagination} />
         </>
       )}
 

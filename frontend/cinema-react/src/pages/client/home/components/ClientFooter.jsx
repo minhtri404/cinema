@@ -1,18 +1,20 @@
+import { Link } from "react-router-dom";
+
 const footerLinks = [
   {
     title: "HMCinema",
     links: [
-      { label: "Phim đang chiếu", href: "#movies" },
-      { label: "Lịch chiếu", href: "#schedule" },
-      { label: "Tin tức / Sự kiện", href: "#news" },
+      { label: "Phim đang chiếu", href: "/phim" },
+      { label: "Lịch chiếu", href: "/lich-chieu" },
+      { label: "Tin tức / Sự kiện", href: "/uu-dai" },
     ],
   },
   {
     title: "Hỗ trợ",
     links: [
-      { label: "Điều khoản sử dụng", href: "#support" },
-      { label: "Chính sách đặt vé", href: "#support" },
-      { label: "Câu hỏi thường gặp", href: "#support" },
+      { label: "Liên hệ hỗ trợ", href: "/lien-he" },
+      { label: "Chính sách đặt vé", href: "/lien-he" },
+      { label: "Câu hỏi thường gặp", href: "/lien-he" },
     ],
   },
 ];
@@ -41,9 +43,9 @@ function ClientFooter() {
             <div key={group.title}>
               <h3>{group.title}</h3>
               {group.links.map((link) => (
-                <a key={link.label} href={link.href}>
+                <Link key={link.label} to={link.href}>
                   {link.label}
-                </a>
+                </Link>
               ))}
             </div>
           ))}

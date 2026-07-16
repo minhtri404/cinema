@@ -33,6 +33,7 @@ export const formatDuration = (duration) => {
 export const getMovieStatus = (movie) => String(movie.status || "").trim().toUpperCase();
 
 export const movieMatchesTab = (movie, tab) => {
+  if (tab === "all") return true;
   const status = getMovieStatus(movie);
   if (tab === "coming") return status === "COMING_SOON";
   if (tab === "advance") return status === "ADVANCE_BOOKING" || status === "PRE_SALE";
@@ -128,6 +129,7 @@ export const hasActiveFilters = (filters) =>
     filters.actor.trim() ||
       filters.director.trim() ||
       filters.ageRating ||
+      filters.releaseYear ||
       filters.genres.length > 0,
   );
 
@@ -138,10 +140,12 @@ export const movieMatchesFilters = (movie, filters) => {
   const movieDirector = normalizeSearchValue(movie.director);
   const movieRating = normalizeSearchValue(getAgeRating(movie));
   const movieGenres = splitGenres(movie.genre).map(normalizeSearchValue);
+  const movieReleaseYear = String(movie.releaseDate || movie.releaseYear || "").slice(0, 4);
 
   if (actorKeyword && !movieActors.includes(actorKeyword)) return false;
   if (directorKeyword && !movieDirector.includes(directorKeyword)) return false;
   if (filters.ageRating && movieRating !== normalizeSearchValue(filters.ageRating)) return false;
+  if (filters.releaseYear && movieReleaseYear !== String(filters.releaseYear)) return false;
   if (
     filters.genres.length > 0 &&
     !filters.genres.every((genre) => movieGenres.includes(normalizeSearchValue(genre)))
@@ -226,6 +230,7 @@ export const groupSeatsByRow = (seats) => {
 
 export const normalizeClientText = (value) =>
   String(value || "")
+    .normalize("NFC")
     .replace(/phÃºt|phÃƒÂºt/gi, "phút")
     .replace(/Ná»™i dung/gi, "Nội dung")
     .replace(/Quay láº¡i danh sÃ¡ch phim/gi, "Quay lại danh sách phim")
@@ -236,7 +241,7 @@ export const normalizeClientText = (value) =>
     .replace(/Ráº¡p|RÃ¡ÂºÂ¡p|R\?p/gi, "Rạp")
     .replace(/PhÃ²ng|Ph(?:áº£|áº³|Ã²|ò|\? )ng|Ph\?ng|Ph\?\?ng/gi, "Phòng")
     .replace(/Cao Lá»—|Cao L\?/gi, "Cao Lỗ")
-    .replace(/HÃ nh \?á»™ng|HÃ nh Äá»™ng/gi, "Hành Động")
+    .replace(/HÃ\u00a0nh \?á»™ng|HÃ\u00a0nh Äá»™ng/gi, "Hành Động")
     .replace(/Lá»‹ch Sá»­/gi, "Lịch Sử")
     .replace(/TÃ¢m LÃ½/gi, "Tâm Lý")
     .replace(/Kinh Dá»‹/gi, "Kinh Dị")

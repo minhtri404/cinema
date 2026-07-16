@@ -1,16 +1,16 @@
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
-import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import {
   createUser,
   deleteUser,
-  getUsers,
+  getCustomers,
   updateUser,
 } from "../../../api/userApi";
 import "../../../styles/user.css";
@@ -22,17 +22,6 @@ const emptyForm = () => ({
   role: "CUSTOMER",
   password: "",
 });
-
-const normalizeRole = (role) => {
-  const value = String(role || "CUSTOMER").toUpperCase();
-  return value === "USER" ? "CUSTOMER" : value;
-};
-
-const ROLE_LABELS = {
-  CUSTOMER: "Khách hàng",
-  STAFF: "Nhân viên",
-  ADMIN: "Quản trị viên",
-};
 
 const errorMessage = (error, fallback) => {
   const data = error?.response?.data;
@@ -61,11 +50,8 @@ const initials = (name) =>
     .toUpperCase();
 
 function UserPage() {
-  const auth = JSON.parse(localStorage.getItem("auth") || "{}");
-  const currentUserId = Number(auth.userId);
   const [users, setUsers] = useState([]);
   const [keyword, setKeyword] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -76,7 +62,7 @@ function UserPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await getUsers();
+      const response = await getCustomers();
       setUsers(response.data || []);
     } catch (error) {
       alert(errorMessage(error, "Không tải được danh sách người dùng."));
@@ -87,7 +73,7 @@ function UserPage() {
 
   useEffect(() => {
     let active = true;
-    getUsers()
+    getCustomers()
       .then((response) => {
         if (active) setUsers(response.data || []);
       })
@@ -106,23 +92,22 @@ function UserPage() {
     const value = keyword.trim().toLowerCase();
     return [...users]
       .filter((user) => {
-        const role = normalizeRole(user.role);
-        const matchesKeyword =
+        return (
           !value ||
           [user.id, user.fullName, user.email, user.phone]
             .filter((item) => item !== null && item !== undefined)
-            .some((item) => String(item).toLowerCase().includes(value));
-        return matchesKeyword && (!roleFilter || role === roleFilter);
+            .some((item) => String(item).toLowerCase().includes(value))
+        );
       })
       .sort((a, b) => Number(a.id) - Number(b.id));
-  }, [keyword, roleFilter, users]);
+  }, [keyword, users]);
+  const pagination = usePagination(filteredUsers, 10);
 
   const stats = useMemo(
     () => ({
       total: users.length,
-      customers: users.filter((user) => normalizeRole(user.role) === "CUSTOMER").length,
-      staff: users.filter((user) => normalizeRole(user.role) === "STAFF").length,
-      admins: users.filter((user) => normalizeRole(user.role) === "ADMIN").length,
+      withPhone: users.filter((user) => Boolean(user.phone?.trim())).length,
+      withoutPhone: users.filter((user) => !user.phone?.trim()).length,
     }),
     [users],
   );
@@ -139,7 +124,7 @@ function UserPage() {
       fullName: user.fullName || "",
       email: user.email || "",
       phone: user.phone || "",
-      role: normalizeRole(user.role),
+      role: "CUSTOMER",
       password: "",
     });
     setModalOpen(true);
@@ -165,9 +150,10 @@ function UserPage() {
 
     try {
       setSaving(true);
+      const payload = { ...form, role: "CUSTOMER" };
       const response = editingUser
-        ? await updateUser(editingUser.id, form)
-        : await createUser(form);
+        ? await updateUser(editingUser.id, payload)
+        : await createUser(payload);
       setUsers((current) =>
         editingUser
           ? current.map((item) => (item.id === editingUser.id ? response.data : item))
@@ -176,9 +162,9 @@ function UserPage() {
       setModalOpen(false);
       setEditingUser(null);
       setForm(emptyForm());
-      alert(editingUser ? "Cập nhật người dùng thành công." : "Thêm người dùng thành công.");
+      alert(editingUser ? "Cập nhật khách hàng thành công." : "Thêm khách hàng thành công.");
     } catch (error) {
-      alert(errorMessage(error, "Không thể lưu người dùng."));
+      alert(errorMessage(error, "Không thể lưu khách hàng."));
     } finally {
       setSaving(false);
     }
@@ -190,9 +176,9 @@ function UserPage() {
       setDeletingId(user.id);
       await deleteUser(user.id);
       setUsers((current) => current.filter((item) => item.id !== user.id));
-      alert("Đã xóa người dùng.");
+      alert("Đã xóa khách hàng.");
     } catch (error) {
-      alert(errorMessage(error, "Không thể xóa người dùng."));
+      alert(errorMessage(error, "Không thể xóa khách hàng."));
     } finally {
       setDeletingId(null);
     }
@@ -204,19 +190,18 @@ function UserPage() {
         <header className="user-header">
           <div>
             <span className="page-label">QUẢN LÝ RẠP CHIẾU PHIM</span>
-            <h2>Quản lý người dùng</h2>
-            <p>Quản lý tài khoản khách hàng, nhân viên và quản trị viên.</p>
+            <h2>Quản lý khách hàng</h2>
+            <p>Quản lý thông tin và tài khoản khách hàng đặt vé trực tuyến.</p>
           </div>
           <button type="button" onClick={openCreate}>
-            <AddRoundedIcon fontSize="small" /> Thêm người dùng
+            <AddRoundedIcon fontSize="small" /> Thêm khách hàng
           </button>
         </header>
 
         <div className="user-stats">
-          <article><span className="blue"><GroupOutlinedIcon /></span><div><small>Tổng tài khoản</small><strong>{stats.total}</strong></div></article>
-          <article><span className="green"><PersonOutlineRoundedIcon /></span><div><small>Khách hàng</small><strong>{stats.customers}</strong></div></article>
-          <article><span className="amber"><BadgeOutlinedIcon /></span><div><small>Nhân viên</small><strong>{stats.staff}</strong></div></article>
-          <article><span className="violet"><AdminPanelSettingsOutlinedIcon /></span><div><small>Quản trị viên</small><strong>{stats.admins}</strong></div></article>
+          <article><span className="blue"><GroupOutlinedIcon /></span><div><small>Tổng khách hàng</small><strong>{stats.total}</strong></div></article>
+          <article><span className="green"><PersonOutlineRoundedIcon /></span><div><small>Có số điện thoại</small><strong>{stats.withPhone}</strong></div></article>
+          <article><span className="amber"><PersonOutlineRoundedIcon /></span><div><small>Chưa có số điện thoại</small><strong>{stats.withoutPhone}</strong></div></article>
         </div>
 
         <div className="user-toolbar">
@@ -224,50 +209,41 @@ function UserPage() {
             <SearchRoundedIcon fontSize="small" />
             <input type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="Tìm họ tên, email, số điện thoại..." />
           </label>
-          <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
-            <option value="">Tất cả vai trò</option>
-            <option value="CUSTOMER">Khách hàng</option>
-            <option value="STAFF">Nhân viên</option>
-            <option value="ADMIN">Quản trị viên</option>
-          </select>
           <button type="button" className="refresh" onClick={loadUsers}>Làm mới</button>
         </div>
 
         <div className="user-table-wrap">
           <table className="user-table">
-            <thead><tr><th>Người dùng</th><th>Liên hệ</th><th>Vai trò</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+            <thead><tr><th>Khách hàng</th><th>Liên hệ</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="5" className="user-empty">Đang tải dữ liệu...</td></tr>
+                <tr><td colSpan="4" className="user-empty">Đang tải dữ liệu...</td></tr>
               ) : filteredUsers.length === 0 ? (
-                <tr><td colSpan="5" className="user-empty">Không có người dùng phù hợp.</td></tr>
-              ) : filteredUsers.map((user) => {
-                const role = normalizeRole(user.role);
-                const isCurrent = Number(user.id) === currentUserId;
+                <tr><td colSpan="4" className="user-empty">Không có khách hàng phù hợp.</td></tr>
+              ) : pagination.paginatedItems.map((user) => {
                 return (
                   <tr key={user.id}>
-                    <td><div className="user-identity"><span className={`user-avatar-large ${role.toLowerCase()}`}>{initials(user.fullName)}</span><div><strong>{user.fullName}</strong><small>#{user.id}{isCurrent ? " · Tài khoản của bạn" : ""}</small></div></div></td>
+                    <td><div className="user-identity"><span className="user-avatar-large customer">{initials(user.fullName)}</span><div><strong>{user.fullName}</strong><small>#{user.id}</small></div></div></td>
                     <td><strong>{user.email}</strong><small>{user.phone || "Chưa có số điện thoại"}</small></td>
-                    <td><span className={`user-role ${role.toLowerCase()}`}>{ROLE_LABELS[role] || role}</span></td>
                     <td>{formatDate(user.createdAt)}</td>
-                    <td><div className="user-actions"><button type="button" onClick={() => openEdit(user)} title="Chỉnh sửa"><EditOutlinedIcon fontSize="small" /></button><button type="button" className="delete" onClick={() => handleDelete(user)} disabled={isCurrent || deletingId === user.id} title={isCurrent ? "Không thể xóa tài khoản đang đăng nhập" : "Xóa"}><DeleteOutlineRoundedIcon fontSize="small" /></button></div></td>
+                    <td><div className="user-actions"><button type="button" onClick={() => openEdit(user)} title="Chỉnh sửa"><EditOutlinedIcon fontSize="small" /></button><button type="button" className="delete" onClick={() => handleDelete(user)} disabled={deletingId === user.id} title="Xóa"><DeleteOutlineRoundedIcon fontSize="small" /></button></div></td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          <Pagination {...pagination} />
         </div>
       </div>
 
       {modalOpen && (
         <div className="user-modal-overlay" onMouseDown={closeModal}>
           <form className="user-modal" onSubmit={handleSubmit} onMouseDown={(event) => event.stopPropagation()}>
-            <div className="user-modal-header"><div><span>{editingUser ? "CHỈNH SỬA TÀI KHOẢN" : "TẠO TÀI KHOẢN"}</span><h3>{editingUser ? editingUser.fullName : "Thêm người dùng"}</h3></div><button type="button" onClick={closeModal}>×</button></div>
+            <div className="user-modal-header"><div><span>{editingUser ? "CHỈNH SỬA KHÁCH HÀNG" : "TẠO TÀI KHOẢN KHÁCH HÀNG"}</span><h3>{editingUser ? editingUser.fullName : "Thêm khách hàng"}</h3></div><button type="button" onClick={closeModal}>×</button></div>
             <div className="user-form-grid">
               <label className="full"><span>Họ và tên *</span><input required value={form.fullName} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} /></label>
               <label><span>Email *</span><input required type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} /></label>
               <label><span>Số điện thoại</span><input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} /></label>
-              <label><span>Vai trò *</span><select value={form.role} onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))} disabled={Number(editingUser?.id) === currentUserId}><option value="CUSTOMER">Khách hàng</option><option value="STAFF">Nhân viên</option><option value="ADMIN">Quản trị viên</option></select></label>
               <label><span>{editingUser ? "Mật khẩu mới" : "Mật khẩu *"}</span><input type="password" required={!editingUser} minLength={form.password ? 6 : undefined} value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} placeholder={editingUser ? "Để trống nếu không đổi" : "Tối thiểu 6 ký tự"} /></label>
             </div>
             <div className="user-modal-actions"><button type="button" className="secondary" onClick={closeModal}>Hủy</button><button type="submit" className="primary" disabled={saving}>{saving ? "Đang lưu..." : editingUser ? "Lưu thay đổi" : "Tạo tài khoản"}</button></div>

@@ -4,7 +4,10 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import RestaurantMenuOutlinedIcon from "@mui/icons-material/RestaurantMenuOutlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import { createFood, deleteFood, getFoods, updateFood, updateFoodStock, uploadFoodImage } from "../../../api/foodApi";
+import { cleanupMediaByUrl } from "../../../api/mediaApi";
 import { foodCategoryLabel, foodSizeLabel, inventoryStatusLabel } from "../../../utils/displayLabels";
 import "../../../styles/food.css";
 
@@ -71,6 +74,7 @@ function FoodPage() {
       return matchesKeyword && (!categoryFilter || food.category === categoryFilter) && (!statusFilter || food.status === statusFilter);
     });
   }, [foods, keyword, categoryFilter, statusFilter]);
+  const pagination = usePagination(filteredFoods, 10);
 
   const summary = useMemo(() => {
     const active = foods.filter((food) => food.status === "ACTIVE").length;
@@ -161,16 +165,23 @@ function FoodPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const previousImageUrl = editingFood?.imageUrl || "";
+    let uploadedImageUrl = "";
+
     try {
       setSaving(true);
       let imageUrl = form.imageUrl;
       if (imageFile) {
         const uploadResponse = await uploadFoodImage(imageFile);
         imageUrl = uploadResponse.data?.url || "";
+        uploadedImageUrl = imageUrl;
       }
       const payload = { ...payloadFromForm(), imageUrl };
       if (editingFood) {
         await updateFood(editingFood.id, payload);
+        if (previousImageUrl && previousImageUrl !== imageUrl) {
+          await cleanupMediaByUrl(previousImageUrl);
+        }
         alert("Cập nhật thức ăn thành công.");
       } else {
         await createFood(payload);
@@ -179,6 +190,7 @@ function FoodPage() {
       closeModal();
       await loadFoods();
     } catch (error) {
+      if (uploadedImageUrl) await cleanupMediaByUrl(uploadedImageUrl);
       alert(errorMessage(error, "Lưu thức ăn thất bại."));
     } finally {
       setSaving(false);
@@ -189,6 +201,7 @@ function FoodPage() {
     if (!window.confirm(`Xóa món "${food.name}"?`)) return;
     try {
       await deleteFood(food.id);
+      await cleanupMediaByUrl(food.imageUrl);
       setFoods((current) => current.filter((item) => item.id !== food.id));
       alert("Xóa thức ăn thành công.");
     } catch (error) {
@@ -270,7 +283,7 @@ function FoodPage() {
               ) : filteredFoods.length === 0 ? (
                 <tr><td colSpan="7" className="food-empty">Chưa có món phù hợp.</td></tr>
               ) : (
-                filteredFoods.map((food) => {
+                pagination.paginatedItems.map((food) => {
                   const lowStock = Number(food.stockQuantity || 0) <= Number(food.lowStockThreshold || 0);
                   return (
                     <tr key={food.id}>
@@ -304,6 +317,7 @@ function FoodPage() {
               )}
             </tbody>
           </table>
+          <Pagination {...pagination} />
         </div>
       </div>
 

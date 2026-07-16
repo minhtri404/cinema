@@ -179,7 +179,7 @@ function TicketScanPage() {
           return;
         }
 
-        setScannerStatus("Đưa QR/barcode trên vé vào khung quét.");
+        setScannerStatus("Đưa mã QR hoặc mã vạch trên vé vào khung quét.");
         const devices = await BrowserMultiFormatReader.listVideoInputDevices();
         setCameraDevices(devices);
         const preferredDevice =
@@ -381,7 +381,7 @@ function TicketScanPage() {
               <video ref={videoRef} playsInline muted />
               <div className="ticket-camera-target"><span /></div>
             </div>
-            <p>{scannerStatus || "Đưa QR/barcode vào khung quét."}</p>
+            <p>{scannerStatus || "Đưa mã QR hoặc mã vạch vào khung quét."}</p>
             <label>
               <span>Nhập thủ công nếu camera không quét được</span>
               <input

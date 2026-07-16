@@ -1,6 +1,8 @@
 import { BarcodeFormat, QRCodeWriter } from "@zxing/library";
 import { useEffect, useMemo, useState } from "react";
 import { getBookingsByUser } from "../../../../api/bookingApi";
+import Pagination from "../../../../components/common/Pagination";
+import usePagination from "../../../../hooks/usePagination";
 
 const money = (value) => `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 
@@ -121,14 +123,15 @@ function ClientTransactionHistory({ auth }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!userId) {
-      setBookings([]);
-      return undefined;
-    }
+    if (!userId) return undefined;
 
     let active = true;
-    setLoading(true);
-    setError("");
+    Promise.resolve().then(() => {
+      if (active) {
+        setLoading(true);
+        setError("");
+      }
+    });
 
     getBookingsByUser(userId)
       .then((response) => {
@@ -151,14 +154,17 @@ function ClientTransactionHistory({ auth }) {
     };
   }, [userId]);
 
+  const visibleBookings = useMemo(() => (userId ? bookings : []), [bookings, userId]);
+
   const stats = useMemo(() => {
-    const paidBookings = bookings.filter((booking) => String(booking.status || "").toUpperCase() === "PAID");
+    const paidBookings = visibleBookings.filter((booking) => String(booking.status || "").toUpperCase() === "PAID");
     return {
-      total: bookings.length,
+      total: visibleBookings.length,
       paid: paidBookings.length,
       amount: paidBookings.reduce((sum, booking) => sum + Number(booking.totalAmount || 0), 0),
     };
-  }, [bookings]);
+  }, [visibleBookings]);
+  const pagination = usePagination(visibleBookings, 5);
 
   return (
     <section className="transaction-history">
@@ -179,11 +185,11 @@ function ClientTransactionHistory({ auth }) {
         <div className="history-state">Đang tải lịch sử giao dịch...</div>
       ) : error ? (
         <div className="history-state error">{error}</div>
-      ) : bookings.length === 0 ? (
+      ) : visibleBookings.length === 0 ? (
         <div className="history-state">Bạn chưa có giao dịch nào.</div>
       ) : (
         <div className="history-list">
-          {bookings.map((booking) => (
+          {pagination.paginatedItems.map((booking) => (
             <article className="history-card" key={booking.id}>
               <div className="history-main">
                 <div>
@@ -209,6 +215,7 @@ function ClientTransactionHistory({ auth }) {
               </button>
             </article>
           ))}
+          <Pagination {...pagination} />
         </div>
       )}
 
@@ -221,7 +228,7 @@ function ClientTransactionHistory({ auth }) {
                 <span>
                   {selectedBooking.showDate
                     ? new Date(`${selectedBooking.showDate}T00:00:00`).toLocaleDateString("vi-VN", { weekday: "long" })
-                    : "Cinema"}
+                    : "Rạp chiếu"}
                 </span>
                 <strong>
                   {selectedBooking.showDate ? formatDateTime(`${selectedBooking.showDate}T00:00:00`).slice(0, 10) : "—"}

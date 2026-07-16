@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import { Link } from "react-router-dom";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
@@ -54,6 +56,7 @@ function GenreListPage() {
       );
     });
   }, [genres, keyword]);
+  const pagination = usePagination(filteredGenres, 10);
 
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm("Bạn có chắc muốn xóa thể loại này?");
@@ -112,7 +115,7 @@ function GenreListPage() {
 
               <tbody>
                 {filteredGenres.length > 0 ? (
-                  filteredGenres.map((genre) => (
+                  pagination.paginatedItems.map((genre) => (
                     <tr key={genre.id}>
                       <td>{genre.id}</td>
                       <td>
@@ -160,6 +163,7 @@ function GenreListPage() {
                 )}
               </tbody>
               </table>
+              <Pagination {...pagination} />
             </div>
           )}
         </div>

@@ -4,6 +4,8 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "../../../components/common/Pagination";
+import usePagination from "../../../hooks/usePagination";
 import { useNavigate } from "react-router-dom";
 import { deleteMovie, getMovies } from "../../../api/movieApi";
 import { cleanupMediaByUrl } from "../../../api/mediaApi";
@@ -61,6 +63,7 @@ function MovieListPage() {
         .some((value) => value.toLowerCase().includes(normalizedKeyword));
     });
   }, [keyword, movies]);
+  const pagination = usePagination(filteredMovies, 10);
 
   useEffect(() => {
     let active = true;
@@ -142,7 +145,7 @@ function MovieListPage() {
               </thead>
 
               <tbody>
-                {filteredMovies.map((movie) => (
+                {pagination.paginatedItems.map((movie) => (
                   <tr key={movie.id}>
                     <td>
                       <div className="movie-info">
@@ -152,8 +155,7 @@ function MovieListPage() {
                             src={movie.posterUrl}
                             alt={movie.title || "Áp phích phim"}
                             onError={(event) => {
-                              event.currentTarget.src =
-                                "https://placehold.co/120x160?text=Kh%C3%B4ng+c%C3%B3+%E1%BA%A3nh";
+                              event.currentTarget.hidden = true;
                             }}
                           />
                         ) : (
@@ -201,6 +203,7 @@ function MovieListPage() {
                 ))}
               </tbody>
             </table>
+            <Pagination {...pagination} />
           </div>
         )}
       </div>
